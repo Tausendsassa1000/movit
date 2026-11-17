@@ -30,7 +30,7 @@
   .mv-scores { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 16px; }
   .mv-pbadge { padding: 8px 14px; border-radius: 20px; background: #1e293b; border: 1px solid #475569; font-size: 0.9rem; }
   .mv-pbadge.cur { background: var(--gold); color: #000; font-weight: 800; border-color: var(--gold); }
-  .mv-video-wrap { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 14px; border: 2px solid #334155; }
+  .mv-video-wrap { position: relative; width: 100%; aspect-ratio: 18.5 / 9; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 14px; border: 2px solid #334155; }
   .mv-video-wrap iframe { width: 100%; height: 100%; border: 0; pointer-events: none; }
   .mv-curtain { position: absolute; inset: 0; background: #000; opacity: 1; pointer-events: none; z-index: 5; transition: opacity 0.4s linear; }
   .mv-topmask { position: absolute; top: 0; left: 0; right: 0; height: 64px; background: linear-gradient(to bottom, #000 75%, transparent); z-index: 6; pointer-events: none; }
@@ -318,7 +318,7 @@
   window.onYouTubeIframeAPIReady = function() {
     ytPlayer = new YT.Player("yt-player", {
       height: "100%", width: "100%",
-      playerVars: { autoplay: 1, controls: 0, modestbranding: 1, rel: 0, iv_load_policy: 3, fs: 0, playsinline: 1 },
+      playerVars: { autoplay: 1, controls: 0, modestbranding: 1, rel: 0, iv_load_policy: 3, cc_load_policy: 0, fs: 0, playsinline: 1 },
       events: {
         onReady: function() { ytReady = true; },
         onStateChange: function(e) {
