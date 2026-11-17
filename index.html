@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MOVIT | Das Kino-Trailer-Quiz</title>
+<style>
+  #mv-app {
+    --bg: #0f172a; --card: #1e293b; --gold: #f59e0b; --gold-l: #fbbf24;
+    --ok: #10b981; --no: #ef4444; --txt: #f8fafc; --mut: #94a3b8;
+    font-family: system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--txt); max-width: 900px;
+    margin: 15px auto; padding: 24px; border-radius: 16px;
+    box-shadow: 0 12px 35px rgba(0,0,0,0.5); box-sizing: border-box;
+  }
+  #mv-app *, #mv-app *::before, #mv-app *::after { box-sizing: border-box; }
+  .mv-hdr { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 14px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+  .mv-logo { font-size: 1.7rem; font-weight: 900; letter-spacing: 2px; color: var(--gold); margin: 0; }
+  .mv-logo span { font-size: 0.85rem; color: var(--mut); font-weight: 400; letter-spacing: 0; }
+  .mv-box { background: var(--card); padding: 18px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #334155; }
+  .mv-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .mv-lbl { display: block; font-size: 0.88rem; font-weight: 700; color: var(--gold-l); margin-bottom: 6px; }
+  .mv-inp, .mv-sel { width: 100%; padding: 10px; border-radius: 8px; background: #0f172a; color: #fff; border: 1px solid #475569; font-size: 0.95rem; margin-bottom: 10px; }
+  .mv-btn { background: var(--gold); color: #000; border: none; padding: 12px 24px; border-radius: 25px; font-weight: 800; font-size: 1rem; cursor: pointer; transition: transform 0.1s, opacity 0.2s; }
+  .mv-btn:hover { transform: scale(1.02); }
+  .mv-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .mv-btn-sec { background: #334155; color: #fff; font-weight: 600; padding: 8px 16px; font-size: 0.88rem; }
+  .mv-scr { display: none; }
+  .mv-scr.act { display: block; }
+  .mv-scores { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 16px; }
+  .mv-pbadge { padding: 8px 14px; border-radius: 20px; background: #1e293b; border: 1px solid #475569; font-size: 0.9rem; }
+  .mv-pbadge.cur { background: var(--gold); color: #000; font-weight: 800; border-color: var(--gold); }
+  .mv-video-wrap { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 14px; border: 2px solid #334155; }
+  .mv-video-wrap iframe { width: 100%; height: 100%; border: 0; pointer-events: none; }
+  .mv-curtain { position: absolute; inset: 0; background: #000; opacity: 1; pointer-events: none; z-index: 5; transition: opacity 0.4s linear; }
+  .mv-topmask { position: absolute; top: 0; left: 0; right: 0; height: 64px; background: linear-gradient(to bottom, #000 75%, transparent); z-index: 6; pointer-events: none; }
+  .mv-prog { height: 8px; background: #334155; border-radius: 99px; overflow: hidden; margin-bottom: 16px; }
+  .mv-prog-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold), var(--ok)); transition: width 0.3s linear; }
+  .mv-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-top: 12px; }
+  .mv-opt { background: #0f172a; color: #fff; border: 2px solid #475569; padding: 12px 14px; border-radius: 10px; text-align: left; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+  .mv-opt:hover:not(:disabled) { border-color: var(--gold); background: #1e293b; }
+  .mv-opt.ok { background: rgba(16, 185, 129, 0.25); border-color: var(--ok); color: #6ee7b7; }
+  .mv-opt.no { background: rgba(239, 68, 68, 0.25); border-color: var(--no); color: #fca5a5; }
+  .mv-oscar { font-size: 4.5rem; margin: 10px 0; filter: drop-shadow(0 0 18px rgba(245,158,11,0.7)); animation: mvFloat 2.5s ease-in-out infinite; }
+  @keyframes mvFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+</style>
+</head>
+<body style="margin:0; padding:10px; background:#090d16;">
+
+<div id="mv-app">
+  <div class="mv-hdr">
+    <h1 class="mv-logo">MOVIT <span id="ui-sub">| Kino-Trailer-Quiz</span></h1>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <select id="sel-ui-lang" class="mv-sel" style="width:auto; margin:0; padding:6px 10px; font-size:0.85rem;">
+        <option value="de" selected>🌐 Deutsch</option>
+        <option value="en">🌐 English</option>
+      </select>
+    </div>
+  </div>
+  <!-- 1. SETUP SCREEN -->
+  <div id="scr-setup" class="mv-scr act">
+    <div class="mv-box">
+      <label class="mv-lbl" id="lbl-apikey">1. TMDb API-Schlüssel (wird lokal gespeichert)</label>
+      <input type="password" id="inp-apikey" class="mv-inp" placeholder="32-stelligen TMDb API-Key v3 einfügen...">
+      <div style="font-size:0.8rem; color:var(--mut);" id="lbl-apihelp">Kostenlos erhältlich auf themoviedb.org unter Einstellungen → API.</div>
+    </div>
+
+    <div class="mv-grid2">
+      <div class="mv-box">
+        <label class="mv-lbl" id="lbl-rules">2. Spielregeln & Filter</label>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span id="lbl-trailerlang" style="font-size:0.9rem;">Trailer-Sprache:</span>
+          <select id="sel-trailer-lang" class="mv-sel" style="width:155px; margin:0;">
+            <option value="menu" selected>Menüsprache</option>
+            <option value="en">Original (Englisch)</option>
+          </select>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span id="lbl-genre" style="font-size:0.9rem;">Film-Genre:</span>
+          <select id="sel-genre" class="mv-sel" style="width:155px; margin:0;">
+            <option value="all" selected>Alle Genres</option>
+            <option value="28">Action</option>
+            <option value="35">Komödie / Comedy</option>
+            <option value="18">Drama</option>
+            <option value="878">Sci-Fi</option>
+            <option value="53">Thriller</option>
+            <option value="12">Abenteuer / Adventure</option>
+            <option value="16">Animation / Familie</option>
+          </select>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span id="lbl-fsk" style="font-size:0.9rem;">Jugendschutz:</span>
+          <select id="sel-fsk" class="mv-sel" style="width:155px; margin:0;">
+            <option value="18" selected>Alle Kinofilme (0–18)</option>
+            <option value="12">Familie (FSK 0–12)</option>
+          </select>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span id="lbl-choices" style="font-size:0.9rem;">Filmauswahl (Stufe 1):</span>
+          <select id="sel-choices" class="mv-sel" style="width:155px; margin:0;">
+            <option value="4">4 Filme</option>
+            <option value="6">6 Filme</option>
+            <option value="8" selected>8 Filme</option>
+          </select>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span id="lbl-target" style="font-size:0.9rem;">Siegpunktzahl:</span>
+          <select id="sel-target" class="mv-sel" style="width:155px; margin:0;">
+            <option value="15">15 Punkte</option>
+            <option value="25" selected>25 Punkte</option>
+            <option value="40">40 Punkte</option>
+            <option value="50">50 Punkte</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mv-box">
+        <label class="mv-lbl" id="lbl-players">3. Spieler eintragen (min. 2)</label>
+        <div id="player-list">
+          <input type="text" class="mv-inp mv-pin" value="Spieler 1">
+          <input type="text" class="mv-inp mv-pin" value="Spieler 2">
+        </div>
+        <button type="button" id="btn-add-player" class="mv-btn mv-btn-sec">+ Spieler hinzufügen</button>
+      </div>
+    </div>
+
+    <div style="text-align:center; margin-top:10px;">
+      <button type="button" id="btn-start" class="mv-btn" style="padding:15px 40px; font-size:1.1rem;">🎬 Spiel starten</button>
+      <p id="setup-err" style="color:var(--no); font-size:0.9rem; margin-top:10px;"></p>
+    </div>
+  </div>
+
+  <!-- 2. GAME SCREEN -->
+  <div id="scr-game" class="mv-scr">
+    <div id="scoreboard" class="mv-scores"></div>
+
+    <div class="mv-box" style="padding:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+        <div>
+          <span id="turn-badge" style="font-size:1.15rem; font-weight:800; color:var(--gold);">Spieler 1 ist dran!</span>
+          <span id="streak-badge" style="font-size:0.85rem; color:var(--mut); margin-left:8px;">(Film 1/2 im Zug)</span>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span id="filter-pct" style="font-size:0.82rem; color:var(--mut);">Sicht: 0%</span>
+          <button type="button" id="btn-skip-movie" class="mv-btn mv-btn-sec" style="padding:6px 12px; font-size:0.82rem;">⏭ Film überspringen</button>
+        </div>
+      </div>
+
+      <div class="mv-video-wrap">
+        <div id="yt-player"></div>
+        <div id="mv-curtain" class="mv-curtain"></div>
+        <div class="mv-topmask"></div>
+      </div>
+
+      <div class="mv-prog"><div id="mv-prog-fill" class="mv-prog-fill"></div></div>
+
+      <div id="quiz-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span id="step-label" style="font-size:0.85rem; font-weight:800; color:var(--gold-l); text-transform:uppercase;">Stufe 1 von 5 • Welcher Film läuft?</span>
+          <span id="step-pts" style="font-size:0.85rem; color:var(--ok); font-weight:700;">+1 Punkt</span>
+        </div>
+        <div id="question-text" style="font-size:1.1rem; font-weight:700; margin-bottom:10px;"></div>
+        <div id="options-grid" class="mv-opts"></div>
+      </div>
+
+      <div id="turn-result" style="display:none; text-align:center; padding:16px; background:#0f172a; border-radius:10px; margin-top:12px; border:1px solid #475569;">
+        <div id="res-title" style="font-size:1.2rem; font-weight:800; margin-bottom:6px;"></div>
+        <div id="res-detail" style="font-size:0.95rem; color:#cbd5e1; margin-bottom:14px;"></div>
+        <button type="button" id="btn-continue" class="mv-btn">Weiter ➔</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. WINNER / OSCAR SCREEN -->
+  <div id="scr-winner" class="mv-scr" style="text-align:center; padding:25px 15px;">
+    <div class="mv-oscar">🏆</div>
+    <div id="win-subtitle" style="color:var(--gold-l); font-size:0.95rem; text-transform:uppercase; letter-spacing:2px; font-weight:700;">AND THE OSCAR GOES TO...</div>
+    <h2 id="win-name" style="color:var(--gold); font-size:2.2rem; margin:8px 0 14px;">Spieler 1</h2>
+    <p id="win-score-txt" style="color:#cbd5e1; font-size:1.1rem; margin-bottom:20px;"></p>
+    <div id="final-table" class="mv-box" style="max-width:440px; margin:0 auto 24px;"></div>
+    <button type="button" id="btn-replay-fanfare" class="mv-btn mv-btn-sec" style="margin-right:10px;">🎺 Fanfare abspielen</button>
+    <button type="button" id="btn-restart" class="mv-btn">Neues Spiel</button>
+  </div>
+</div>
+<script src="https://youtube.com"></script>
+<script>
+(function() {
+  const I18N = {
+    de: {
+      sub: "| Kino-Trailer-Quiz",
+      apikey: "1. TMDb API-Schlüssel (wird lokal gespeichert)",
+      apihelp: "Kostenlos erhältlich auf themoviedb.org unter Einstellungen → API.",
+      rules: "2. Spielregeln & Filter",
+      tlang: "Trailer-Sprache:",
+      tlangMenu: "Menüsprache (Deutsch)",
+      tlangOrig: "Originalton (Englisch)",
+      genre: "Film-Genre:",
+      fsk: "Jugendschutz:",
+      fsk18: "Alle Kinofilme (0–18)",
+      fsk12: "Familie (FSK 0–12)",
+      choices: "Filmauswahl (Stufe 1):",
+      target: "Siegpunktzahl:",
+      players: "3. Spieler eintragen (min. 2)",
+      addP: "+ Spieler hinzufügen",
+      start: "🎬 Spiel starten",
+      turn: "ist dran!",
+      filmOf: "Film",
+      inTurn: "im Zug",
+      vis: "Sicht",
+      skip: "⏭ Film überspringen",
+      step1: "Stufe 1 von 5 • Welcher Film läuft?",
+      step2: "Stufe 2 von 5 • Wer spielt eine Hauptrolle?",
+      step3: "Stufe 3 von 5 • Wer führte Regie?",
+      step4: "Stufe 4 von 5 • In welchem Jahr erschien der Film?",
+      step5: "Stufe 5 von 5 • Welcher Slogan / Wert gehört zum Film?",
+      q1: "Wähle den richtigen Filmtitel aus:",
+      q2: "Welche/r Schauspieler/in gehört zum Cast?",
+      q3: "Wer ist Regisseur/in dieses Films?",
+      q4: "Wann kam dieser Film ins Kino?",
+      q5Tag: "Welcher offizielle Kino-Slogan (Tagline) gehört zu diesem Film?",
+      q5Rate: "Wie hoch ist die Publikumsbewertung (TMDb-Note)?",
+      bonusTitle: "🌟 Perfekte 5/5! Bonus-Film freigeschaltet!",
+      bonusDesc: "Du darfst noch einen 2. Film spielen (max. 10 Punkte im Zug).",
+      maxTitle: "🔥 Sensationelle 10/10 Punkte im Zug!",
+      maxDesc: "Maximale Punktzahl erreicht! Jetzt wechselt der Zug zum nächsten Spieler.",
+      wrongTitle: "✘ Leider falsch – Zug beendet!",
+      nextBtn: "Weiter ➔",
+      tieMsg: "⚡ STECHEN! Gleichstand an der Spitze – 1 Entscheidungs-Film pro Person!",
+      winTxt: "gewinnt den Oscar mit",
+      pts: "Punkten!",
+      replay: "🎺 Fanfare abspielen",
+      restart: "Neues Spiel",
+      loading: "Suche passenden Film & Trailer..."
+    },
+    en: {
+      sub: "| Cinema Trailer Quiz",
+      apikey: "1. TMDb API Key (saved locally)",
+      apihelp: "Free on themoviedb.org under Settings → API.",
+      rules: "2. Game Rules & Filters",
+      tlang: "Trailer Language:",
+      tlangMenu: "Menu Language",
+      tlangOrig: "Original Version (English)",
+      genre: "Movie Genre:",
+      fsk: "Age Rating:",
+      fsk18: "All Cinema Movies (0–18)",
+      fsk12: "Family Friendly (PG-13 / 12)",
+      choices: "Movie Choices (Step 1):",
+      target: "Target Score:",
+      players: "3. Enter Players (min. 2)",
+      addP: "+ Add Player",
+      start: "🎬 Start Game",
+      turn: "'s turn!",
+      filmOf: "Movie",
+      inTurn: "in turn",
+      vis: "Visibility",
+      skip: "⏭ Skip Movie",
+      step1: "Step 1 of 5 • Which movie is playing?",
+      step2: "Step 2 of 5 • Who stars in the lead cast?",
+      step3: "Step 3 of 5 • Who directed this movie?",
+      step4: "Step 4 of 5 • In which year was it released?",
+      step5: "Step 5 of 5 • Which tagline / rating belongs to it?",
+      q1: "Select the correct movie title:",
+      q2: "Which actor/actress stars in this movie?",
+      q3: "Who is the director of this movie?",
+      q4: "When was this movie released?",
+      q5Tag: "Which official movie tagline belongs to this film?",
+      q5Rate: "What is the audience rating (TMDb score)?",
+      bonusTitle: "🌟 Perfect 5/5! Bonus movie unlocked!",
+      bonusDesc: "You may play a 2nd movie (up to 10 points in one turn).",
+      maxTitle: "🔥 Incredible 10/10 points in one turn!",
+      maxDesc: "Maximum turn score reached! Passing turn to the next player.",
+      wrongTitle: "✘ Wrong answer – turn ends!",
+      nextBtn: "Continue ➔",
+      tieMsg: "⚡ TIEBREAKER! Tied at the top – 1 sudden-death movie each!",
+      winTxt: "wins the Oscar with",
+      pts: "points!",
+      replay: "🎺 Replay Fanfare",
+      restart: "New Game",
+      loading: "Finding movie & official trailer..."
+    }
+  };
+
+  let uiLang = "de";
+  let ytPlayer = null;
+  let ytReady = false;
+  let filterTimer = null;
+  let usedMovieIds = new Set();
+
+  let cfg = { apiKey: "", trailerLang: "de", genre: "all", fsk: "18", choices: 8, target: 25 };
+  let state = {
+    players: [], curIdx: 0, moviesInTurn: 0, step: 0,
+    isTiebreaker: false, tieCandidates: [], tieStepIdx: 0,
+    currentMovie: null, stepsData: [], pendingAction: null
+  };
+
+  const savedKey = localStorage.getItem("movit_tmdb_key");
+  if (savedKey) document.getElementById("inp-apikey").value = savedKey;
+
+  window.onYouTubeIframeAPIReady = function() {
+    ytPlayer = new YT.Player("yt-player", {
+      height: "100%", width: "100%",
+      playerVars: { autoplay: 1, controls: 0, modestbranding: 1, rel: 0, iv_load_policy: 3, fs: 0, playsinline: 1 },
+      events: {
+        onReady: function() { ytReady = true; },
+        onStateChange: function(e) {
+          if (e.data === YT.PlayerState.PLAYING) startCurtainLoop();
+        }
+      }
+    });
+  };
+
+  function applyLanguage() {
+    uiLang = document.getElementById("sel-ui-lang").value;
+    const t = I18N[uiLang];
+    document.getElementById("ui-sub").innerText = t.sub;
+    document.getElementById("lbl-apikey").innerText = t.apikey;
+    document.getElementById("lbl-apihelp").innerText = t.apihelp;
+    document.getElementById("lbl-rules").innerText = t.rules;
+    document.getElementById("lbl-trailerlang").innerText = t.tlang;
+    document.getElementById("sel-trailer-lang").options[0].text = t.tlangMenu;
+    document.getElementById("sel-trailer-lang").options[1].text = t.tlangOrig;
+    document.getElementById("lbl-genre").innerText = t.genre;
+    document.getElementById("lbl-fsk").innerText = t.fsk;
+    document.getElementById("sel-fsk").options[0].text = t.fsk18;
+    document.getElementById("sel-fsk").options[1].text = t.fsk12;
+    document.getElementById("lbl-choices").innerText = t.choices;
+    document.getElementById("lbl-target").innerText = t.target;
+    document.getElementById("lbl-players").innerText = t.players;
+    document.getElementById("btn-add-player").innerText = t.addP;
+    document.getElementById("btn-start").innerText = t.start;
+    document.getElementById("btn-skip-movie").innerText = t.skip;
+    document.getElementById("btn-replay-fanfare").innerText = t.replay;
+    document.getElementById("btn-restart").innerText = t.restart;
+  }
+  document.getElementById("sel-ui-lang").addEventListener("change", applyLanguage);
+
+  document.getElementById("btn-add-player").addEventListener("click", function() {
+    const list = document.getElementById("player-list");
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = "mv-inp mv-pin";
+    inp.value = (uiLang === "de" ? "Spieler " : "Player ") + (list.children.length + 1);
+    list.appendChild(inp);
+  });
+
+  function showScreen(id) {
+    document.querySelectorAll(".mv-scr").forEach(s => s.classList.remove("act"));
+    document.getElementById(id).classList.add("act");
+  }
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  function playOscarFanfare() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const notes = [
+        { f: 392.00, t: 0.0, d: 0.18 },
+        { f: 523.25, t: 0.2, d: 0.18 },
+        { f: 659.25, t: 0.4, d: 0.18 },
+        { f: 783.99, t: 0.6, d: 0.45 },
+        { f: 659.25, t: 1.1, d: 0.2 },
+        { f: 783.99, t: 1.35, d: 0.9 }
+      ];
+      notes.forEach(n => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(n.f, ctx.currentTime + n.t);
+        gain.gain.setValueAtTime(0.28, ctx.currentTime + n.t);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + n.t + n.d);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + n.t);
+        osc.stop(ctx.currentTime + n.t + n.d);
+      });
+    } catch (e) {}
+  }
+  document.getElementById("btn-replay-fanfare").addEventListener("click", playOscarFanfare);
+  async function tmdbFetch(path) {
+    const sep = path.includes("?") ? "&" : "?";
+    const url = "https://themoviedb.org" + path + sep + "api_key=" + encodeURIComponent(cfg.apiKey);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("TMDb API Fehler (" + res.status + ") – bitte API-Key prüfen.");
+    return await res.json();
+  }
+
+  function startCurtainLoop() {
+    clearInterval(filterTimer);
+    const curtain = document.getElementById("mv-curtain");
+    const pctEl = document.getElementById("filter-pct");
+    const fillEl = document.getElementById("mv-prog-fill");
+    const t = I18N[uiLang];
+
+    filterTimer = setInterval(function() {
+      if (!ytPlayer || !ytReady || typeof ytPlayer.getDuration !== "function") return;
+      const dur = ytPlayer.getDuration();
+      const cur = ytPlayer.getCurrentTime();
+      if (dur > 0) {
+        const half = dur * 0.5;
+        const progress = Math.min(1, cur / half);
+        const opacity = Math.max(0, 1 - progress);
+        curtain.style.opacity = opacity.toFixed(3);
+        const visPct = Math.round(progress * 100);
+        pctEl.innerText = t.vis + ": " + visPct + "%";
+        fillEl.style.width = Math.min(100, Math.round((cur / dur) * 100)) + "%";
+      }
+    }, 250);
+  }
+
+  async function findMovieWithTrailer() {
+    const langCode = cfg.trailerLang === "en" ? "en-US" : (uiLang === "de" ? "de-DE" : "en-US");
+    const textLang = uiLang === "de" ? "de-DE" : "en-US";
+    const genreParam = cfg.genre !== "all" ? "&with_genres=" + cfg.genre : "";
+    const certParam = cfg.fsk === "12" ? "&certification_country=DE&certification.lte=12" : "";
+
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const randomPage = Math.floor(Math.random() * 18) + 1;
+      const disc = await tmdbFetch(
+        "/discover/movie?language=" + textLang +
+        "&include_adult=false&sort_by=vote_count.desc&vote_count.gte=400" +
+        genreParam + certParam + "&page=" + randomPage
+      );
+      if (!disc.results || disc.results.length === 0) continue;
+
+      const candidates = shuffle(disc.results.filter(m => !usedMovieIds.has(m.id)));
+      for (let i = 0; i < Math.min(6, candidates.length); i++) {
+        const cand = candidates.at(i);
+        const vids = await tmdbFetch("/movie/" + cand.id + "/videos?language=" + langCode);
+        let trailer = (vids.results || []).find(v => v.site === "YouTube" && v.type === "Trailer");
+        if (!trailer && langCode !== "en-US") {
+          const vidsEn = await tmdbFetch("/movie/" + cand.id + "/videos?language=en-US");
+          trailer = (vidsEn.results || []).find(v => v.site === "YouTube" && v.type === "Trailer");
+        }
+        if (trailer) {
+          const details = await tmdbFetch("/movie/" + cand.id + "?language=" + textLang + "&append_to_response=credits");
+          usedMovieIds.add(cand.id);
+          return { details: details, trailerKey: trailer.key, pool: disc.results };
+        }
+      }
+    }
+    throw new Error("Kein passender Trailer gefunden – bitte erneut versuchen.");
+  }
+  async function buildQuizSteps(movieData) {
+    const m = movieData.details;
+    const t = I18N[uiLang];
+    const textLang = uiLang === "de" ? "de-DE" : "en-US";
+    const mainGenre = (m.genres && m.genres.length > 0) ? m.genres.at(0).id : "";
+
+    const sameGenre = await tmdbFetch(
+      "/discover/movie?language=" + textLang + "&include_adult=false&sort_by=popularity.desc&vote_count.gte=300" +
+      (mainGenre ? "&with_genres=" + mainGenre : "") + "&page=" + (Math.floor(Math.random() * 5) + 1)
+    );
+    const distractors = shuffle((sameGenre.results || []).filter(x => x.id !== m.id && x.title)).slice(0, cfg.choices - 1);
+    const step1Opts = shuffle([{ label: m.title, ok: true }].concat(distractors.map(d => ({ label: d.title, ok: false }))));
+
+    const cast = (m.credits && m.credits.cast) ? m.credits.cast : [];
+    const leadActor = cast.length > 0 ? cast.at(0).name : "Tom Hanks";
+    const actorDistractors = ["Leonardo DiCaprio", "Scarlett Johansson", "Brad Pitt", "Natalie Portman", "Tom Cruise", "Meryl Streep", "Denzel Washington", "Emma Stone", "Keanu Reeves", "Cate Blanchett"]
+      .filter(n => !cast.slice(0, 6).some(c => c.name === n));
+    const step2Opts = shuffle([{ label: leadActor, ok: true }].concat(shuffle(actorDistractors).slice(0, 3).map(n => ({ label: n, ok: false }))));
+
+    const crew = (m.credits && m.credits.crew) ? m.credits.crew : [];
+    const dirObj = crew.find(c => c.job === "Director");
+    const director = dirObj ? dirObj.name : "Steven Spielberg";
+    const dirDistractors = ["Christopher Nolan", "Quentin Tarantino", "Steven Spielberg", "Martin Scorsese", "Ridley Scott", "Denis Villeneuve", "James Cameron", "Greta Gerwig", "Peter Jackson", "David Fincher"]
+      .filter(n => n !== director);
+    const step3Opts = shuffle([{ label: director, ok: true }].concat(shuffle(dirDistractors).slice(0, 3).map(n => ({ label: n, ok: false }))));
+
+    const relYear = m.release_date ? parseInt(m.release_date.slice(0, 4)) : 2010;
+    const currentYear = new Date().getFullYear();
+    const yearSet = new Set([relYear]);
+    while (yearSet.size < 4) {
+      const offset = (Math.floor(Math.random() * 7) + 1) * (Math.random() < 0.5 ? -1 : 1);
+      const candY = relYear + offset;
+      if (candY >= 1960 && candY <= currentYear) yearSet.add(candY);
+    }
+    const step4Opts = shuffle(Array.from(yearSet).map(y => ({ label: String(y), ok: y === relYear })));
+
+    let step5Q = t.q5Rate;
+    let step5Opts = [];
+    if (m.tagline && m.tagline.trim().length > 6) {
+      step5Q = t.q5Tag;
+      const tagPool = distractors.map(d => d.overview ? d.overview.split(".").at(0).trim() : "").filter(s => s.length > 8 && s.length < 95 && s !== m.tagline);
+      const fallbackTags = [
+        uiLang === "de" ? "Jede Legende hat einen Anfang." : "Every legend has a beginning.",
+        uiLang === "de" ? "Nichts ist so, wie es scheint." : "Nothing is what it seems.",
+        uiLang === "de" ? "Ein Abenteuer jenseits aller Grenzen." : "An adventure beyond all limits."
+      ];
+      const wrongTags = shuffle(tagPool.concat(fallbackTags)).slice(0, 3);
+      step5Opts = shuffle([{ label: "„" + m.tagline + "“", ok: true }].concat(wrongTags.map(w => ({ label: "„" + w + "“", ok: false }))));
+    } else {
+      const realRating = m.vote_average ? m.vote_average.toFixed(1) : "7.5";
+      const rSet = new Set([realRating]);
+      while (rSet.size < 4) {
+        const fake = (Math.max(4.5, Math.min(9.4, parseFloat(realRating) + ((Math.floor(Math.random() * 5) + 1) * 0.4 * (Math.random() < 0.5 ? -1 : 1))))).toFixed(1);
+        rSet.add(fake);
+      }
+      step5Opts = shuffle(Array.from(rSet).map(r => ({ label: "★ " + r + " / 10", ok: r === realRating })));
+    }
+
+    return [
+      { badge: t.step1, q: t.q1, opts: step1Opts },
+      { badge: t.step2, q: t.q2, opts: step2Opts },
+      { badge: t.step3, q: t.q3, opts: step3Opts },
+      { badge: t.step4, q: t.q4, opts: step4Opts },
+      { badge: t.step5, q: step5Q, opts: step5Opts }
+    ];
+  }
+  function renderScoreboard() {
+    const sb = document.getElementById("scoreboard");
+    sb.innerHTML = "";
+    state.players.forEach((p, idx) => {
+      const div = document.createElement("div");
+      div.className = "mv-pbadge" + (idx === state.curIdx ? " cur" : "");
+      div.innerText = p.name + ": " + p.score + " / " + cfg.target;
+      sb.appendChild(div);
+    });
+  }
+
+  async function loadNextMovieTurn() {
+    const t = I18N[uiLang];
+    clearInterval(filterTimer);
+    document.getElementById("mv-curtain").style.opacity = "1";
+    document.getElementById("filter-pct").innerText = t.vis + ": 0%";
+    document.getElementById("mv-prog-fill").style.width = "0%";
+    document.getElementById("turn-result").style.display = "none";
+    document.getElementById("quiz-box").style.display = "block";
+    document.getElementById("options-grid").innerHTML = "<div style='color:#94a3b8;'>" + t.loading + "</div>";
+
+    const curPlayer = state.players.at(state.curIdx);
+    document.getElementById("turn-badge").innerText = (state.isTiebreaker ? "⚡ " : "") + curPlayer.name + (uiLang === "de" ? " " + t.turn : t.turn);
+    document.getElementById("streak-badge").innerText = "(" + t.filmOf + " " + (state.moviesInTurn + 1) + "/2 " + t.inTurn + ")";
+    renderScoreboard();
+
+    try {
+      const movieData = await findMovieWithTrailer();
+      state.currentMovie = movieData.details;
+      state.stepsData = await buildQuizSteps(movieData);
+      state.step = 0;
+
+      if (ytPlayer && ytReady) {
+        ytPlayer.loadVideoById(movieData.trailerKey);
+      }
+      renderStep();
+    } catch (err) {
+      document.getElementById("options-grid").innerHTML = "<div style='color:#ef4444;'>" + err.message + "</div>";
+    }
+  }
+
+  function renderStep() {
+    const s = state.stepsData.at(state.step);
+    document.getElementById("step-label").innerText = s.badge;
+    document.getElementById("question-text").innerText = s.q;
+    const grid = document.getElementById("options-grid");
+    grid.innerHTML = "";
+
+    s.opts.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "mv-opt";
+      btn.innerText = opt.label;
+      btn.addEventListener("click", function() { handleAnswer(opt, btn); });
+      grid.appendChild(btn);
+    });
+  }
+
+  function handleAnswer(opt, clickedBtn) {
+    const t = I18N[uiLang];
+    const allBtns = document.querySelectorAll("#options-grid .mv-opt");
+    allBtns.forEach(b => { b.disabled = true; });
+
+    const curPlayer = state.players.at(state.curIdx);
+
+    if (opt.ok) {
+      clickedBtn.classList.add("ok");
+      curPlayer.score += 1;
+      renderScoreboard();
+
+      if (state.step < 4) {
+        setTimeout(function() {
+          state.step += 1;
+          renderStep();
+        }, 650);
+      } else {
+        document.getElementById("mv-curtain").style.opacity = "0";
+        state.moviesInTurn += 1;
+        const resBox = document.getElementById("turn-result");
+        resBox.style.display = "block";
+        document.getElementById("btn-continue").innerText = t.nextBtn;
+
+        if (!state.isTiebreaker && state.moviesInTurn < 2) {
+          document.getElementById("res-title").innerHTML = "<span style='color:#10b981;'>" + t.bonusTitle + "</span>";
+          document.getElementById("res-detail").innerText = t.bonusDesc;
+          state.pendingAction = "bonus_movie";
+        } else {
+          document.getElementById("res-title").innerHTML = "<span style='color:#fbbf24;'>" + t.maxTitle + "</span>";
+          document.getElementById("res-detail").innerText = t.maxDesc;
+          state.pendingAction = "next_player";
+        }
+      }
+    } else {
+      clickedBtn.classList.add("no");
+      const correctOpt = state.stepsData.at(state.step).opts.find(o => o.ok);
+      allBtns.forEach(b => { if (correctOpt && b.innerText === correctOpt.label) b.classList.add("ok"); });
+      document.getElementById("mv-curtain").style.opacity = "0";
+
+      const resBox = document.getElementById("turn-result");
+      resBox.style.display = "block";
+      document.getElementById("res-title").innerHTML = "<span style='color:#ef4444;'>" + t.wrongTitle + "</span>";
+      document.getElementById("res-detail").innerText = (state.currentMovie ? state.currentMovie.title + " (" + (state.currentMovie.release_date || "").slice(0, 4) + ")" : "");
+      document.getElementById("btn-continue").innerText = t.nextBtn;
+      state.pendingAction = "next_player";
+    }
+  }
+
+  document.getElementById("btn-continue").addEventListener("click", function() {
+    if (state.pendingAction === "bonus_movie") {
+      loadNextMovieTurn();
+    } else {
+      advanceTurn();
+    }
+  });
+
+  document.getElementById("btn-skip-movie").addEventListener("click", function() {
+    loadNextMovieTurn();
+  });
+
+  function advanceTurn() {
+    state.moviesInTurn = 0;
+
+    if (state.isTiebreaker) {
+      state.tieStepIdx += 1;
+      if (state.tieStepIdx < state.tieCandidates.length) {
+        state.curIdx = state.tieCandidates.at(state.tieStepIdx);
+        loadNextMovieTurn();
+      } else {
+        evaluateEndOfRound();
+      }
+      return;
+    }
+
+    state.curIdx += 1;
+    if (state.curIdx < state.players.length) {
+      loadNextMovieTurn();
+    } else {
+      state.curIdx = 0;
+      evaluateEndOfRound();
+    }
+  }
+
+  function evaluateEndOfRound() {
+    const maxScore = Math.max.apply(null, state.players.map(p => p.score));
+    if (maxScore < cfg.target && !state.isTiebreaker) {
+      loadNextMovieTurn();
+      return;
+    }
+
+    const leaders = [];
+    state.players.forEach((p, idx) => { if (p.score === maxScore) leaders.push(idx); });
+
+    if (leaders.length === 1) {
+      showWinner(state.players.at(leaders.at(0)));
+    } else {
+      state.isTiebreaker = true;
+      state.tieCandidates = leaders;
+      state.tieStepIdx = 0;
+      state.curIdx = leaders.at(0);
+      alert(I18N[uiLang].tieMsg);
+      loadNextMovieTurn();
+    }
+  }
+
+  function showWinner(winner) {
+    clearInterval(filterTimer);
+    if (ytPlayer && ytReady && typeof ytPlayer.stopVideo === "function") ytPlayer.stopVideo();
+
+    const t = I18N[uiLang];
+    document.getElementById("win-name").innerText = winner.name;
+    document.getElementById("win-score-txt").innerText = winner.name + " " + t.winTxt + " " + winner.score + " " + t.pts;
+
+    const tbl = document.getElementById("final-table");
+    tbl.innerHTML = "";
+    state.players.slice().sort((a, b) => b.score - a.score).forEach((p, idx) => {
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex; justify-content:space-between; padding:8px 6px; border-bottom:1px solid #334155;";
+      row.innerHTML = "<span>" + (idx + 1) + ". " + p.name + "</span><strong>" + p.score + " Pkt.</strong>";
+      tbl.appendChild(row);
+    });
+
+    showScreen("scr-winner");
+    playOscarFanfare();
+  }
+
+  document.getElementById("btn-start").addEventListener("click", function() {
+    const errEl = document.getElementById("setup-err");
+    errEl.innerText = "";
+    const key = document.getElementById("inp-apikey").value.trim();
+    if (!key) {
+      errEl.innerText = uiLang === "de" ? "Bitte zuerst deinen TMDb API-Schlüssel eingeben." : "Please enter your TMDb API Key first.";
+      return;
+    }
+    localStorage.setItem("movit_tmdb_key", key);
+
+    const names = Array.from(document.querySelectorAll(".mv-pin")).map(i => i.value.trim()).filter(v => v.length > 0);
+    if (names.length < 2) {
+      errEl.innerText = uiLang === "de" ? "Bitte mindestens 2 Spielernamen eintragen." : "Please enter at least 2 player names.";
+      return;
+    }
+
+    cfg = {
+      apiKey: key,
+      trailerLang: document.getElementById("sel-trailer-lang").value,
+      genre: document.getElementById("sel-genre").value,
+      fsk: document.getElementById("sel-fsk").value,
+      choices: parseInt(document.getElementById("sel-choices").value) || 8,
+      target: parseInt(document.getElementById("sel-target").value) || 25
+    };
+
+    state = {
+      players: names.map(n => ({ name: n, score: 0 })),
+      curIdx: 0, moviesInTurn: 0, step: 0,
+      isTiebreaker: false, tieCandidates: [], tieStepIdx: 0,
+      currentMovie: null, stepsData: [], pendingAction: null
+    };
+
+    usedMovieIds.clear();
+    showScreen("scr-game");
+    loadNextMovieTurn();
+  });
+
+  document.getElementById("btn-restart").addEventListener("click", function() {
+    clearInterval(filterTimer);
+    if (ytPlayer && ytReady && typeof ytPlayer.stopVideo === "function") ytPlayer.stopVideo();
+    showScreen("scr-setup");
+  });
+})();
+</script>
+</body>
+</html>
