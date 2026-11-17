@@ -149,6 +149,11 @@
       <div class="mv-video-wrap">
         <div id="yt-player"></div>
         <div id="mv-curtain" class="mv-curtain"></div>
+        <div id="mv-ad-banner" style="display:none; position:absolute; inset:0; z-index:7; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:20px; pointer-events:none;">
+          <div style="font-size:2.4rem; margin-bottom:10px;">🍿🎬</div>
+          <div id="mv-ad-title" style="color:#fbbf24; font-size:1.15rem; font-weight:800; letter-spacing:0.5px; margin-bottom:6px;">Gleich hebt sich der Vorhang!</div>
+          <div id="mv-ad-sub" style="color:#cbd5e1; font-size:0.9rem; max-width:380px;">Noch ein kurzer Moment – spitzt schon mal die Ohren...</div>
+        </div>
         <div class="mv-topmask"></div>
       </div>
 
@@ -293,7 +298,7 @@
   let state = {
     players: [], curIdx: 0, moviesInTurn: 0, step: 0,
     isTiebreaker: false, tieCandidates: [], tieStepIdx: 0,
-    currentMovie: null, stepsData: [], pendingAction: null
+    currentMovie: null, currentTrailerKey: "", stepsData: [], pendingAction: null
   };
 
   const savedKey = "8ff9a1e0bcaaeae222cad93a580df9c6";
@@ -397,25 +402,51 @@
   function startCurtainLoop() {
     clearInterval(filterTimer);
     const curtain = document.getElementById("mv-curtain");
+    const adBanner = document.getElementById("mv-ad-banner");
+    const adTitle = document.getElementById("mv-ad-title");
+    const adSub = document.getElementById("mv-ad-sub");
     const pctEl = document.getElementById("filter-pct");
     const fillEl = document.getElementById("mv-prog-fill");
     const t = I18N[uiLang];
+
+    const slogansDe = [
+      "Noch ein kurzer Moment – spitzt schon mal die Ohren...",
+      "Das Kino-Licht dimmt herunter – gleich startet der Ton!",
+      "Popcorn bereit? Der Trailer steht schon in den Startlöchern...",
+      "Ruhe im Saal – gleich beginnt das Rätselraten!"
+    ];
+    const slogansEn = [
+      "Just a moment – get your ears ready...",
+      "The cinema lights are dimming – audio starts shortly!",
+      "Popcorn ready? The trailer is about to begin...",
+      "Quiet in the theater – the guessing game starts in a second!"
+    ];
+    const pickedSlogan = uiLang === "de"
+      ? slogansDe.at(Math.floor(Math.random() * slogansDe.length))
+      : slogansEn.at(Math.floor(Math.random() * slogansEn.length));
 
     filterTimer = setInterval(function() {
       if (!ytPlayer || !ytReady || typeof ytPlayer.getDuration !== "function") return;
       const dur = ytPlayer.getDuration();
       const cur = ytPlayer.getCurrentTime();
+      const vData = (typeof ytPlayer.getVideoData === "function") ? ytPlayer.getVideoData() : null;
+      const activeId = vData && vData.video_id ? vData.video_id : "";
 
-      // Echte Trailer sind mindestens 45 Sek. lang – kürzere Clips sind Werbespots!
-      if (dur > 0 && dur < 45) {
+      const isAdPlaying = (state.currentTrailerKey && activeId !== state.currentTrailerKey) || (dur > 0 && dur < 45);
+
+      if (isAdPlaying) {
         if (typeof ytPlayer.mute === "function") ytPlayer.mute();
         curtain.style.opacity = "1";
-        pctEl.innerText = uiLang === "de" ? "⏳ Werbung wird stumm übersprungen..." : "⏳ Skipping ad silently...";
+        adTitle.innerText = uiLang === "de" ? "Gleich hebt sich der Vorhang!" : "The curtain rises shortly!";
+        adSub.innerText = pickedSlogan;
+        adBanner.style.display = "flex";
+        pctEl.innerText = uiLang === "de" ? "⏳ Bitte kurz Geduld..." : "⏳ Please wait...";
         fillEl.style.width = "0%";
         return;
       }
 
-      if (dur >= 45) {
+      if (dur > 0) {
+        adBanner.style.display = "none";
         if (typeof ytPlayer.isMuted === "function" && ytPlayer.isMuted() && typeof ytPlayer.unMute === "function") {
           ytPlayer.unMute();
         }
@@ -543,6 +574,7 @@
     const t = I18N[uiLang];
     clearInterval(filterTimer);
     document.getElementById("mv-curtain").style.opacity = "1";
+    document.getElementById("mv-ad-banner").style.display = "none";
     document.getElementById("filter-pct").innerText = t.vis + ": 0%";
     document.getElementById("mv-prog-fill").style.width = "0%";
     document.getElementById("turn-result").style.display = "none";
@@ -561,6 +593,7 @@
       state.step = 0;
 
       if (ytPlayer && ytReady) {
+        state.currentTrailerKey = movieData.trailerKey;
         ytPlayer.loadVideoById(movieData.trailerKey);
       }
       renderStep();
