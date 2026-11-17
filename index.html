@@ -403,18 +403,12 @@
     clearInterval(filterTimer);
     const curtain = document.getElementById("mv-curtain");
     const adBanner = document.getElementById("mv-ad-banner");
-    const adTitle = document.getElementById("mv-ad-title");
-    const adSub = document.getElementById("mv-ad-sub");
     const pctEl = document.getElementById("filter-pct");
     const fillEl = document.getElementById("mv-prog-fill");
     const t = I18N[uiLang];
 
-    adTitle.innerText = uiLang === "de"
-      ? "Vor dem Trailer kann kurz Werbung zu hören sein"
-      : "A short ad may play before the trailer";
-    adSub.innerText = uiLang === "de"
-      ? "Genau genug Zeit, um noch schnell Popcorn zu holen – der Vorhang hebt sich gleich von selbst!"
-      : "Just enough time to grab some popcorn – the curtain will rise automatically!";
+    // Sobald der echte Trailer startet, verschwindet das Popcorn-Schild sofort!
+    adBanner.style.display = "none";
 
     filterTimer = setInterval(function() {
       if (!ytPlayer || !ytReady || typeof ytPlayer.getDuration !== "function") return;
@@ -426,14 +420,6 @@
         const progress = Math.min(1, cur / half);
         const opacity = Math.max(0, 1 - progress);
         curtain.style.opacity = opacity.toFixed(3);
-
-        // Solange der Vorhang noch über 80 % schwarz ist, bleibt das Popcorn-Schild sichtbar
-        if (opacity > 0.8) {
-          adBanner.style.display = "flex";
-          adBanner.style.opacity = ((opacity - 0.8) / 0.2).toFixed(2);
-        } else {
-          adBanner.style.display = "none";
-        }
 
         const visPct = Math.round(progress * 100);
         pctEl.innerText = t.vis + ": " + visPct + "%";
@@ -555,6 +541,7 @@
     const t = I18N[uiLang];
     clearInterval(filterTimer);
     document.getElementById("mv-curtain").style.opacity = "1";
+    document.getElementById("mv-ad-banner").style.display = "flex";
     document.getElementById("mv-ad-banner").style.opacity = "1";
     document.getElementById("filter-pct").innerText = t.vis + ": 0%";
     document.getElementById("mv-prog-fill").style.width = "0%";
