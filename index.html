@@ -149,10 +149,10 @@
       <div class="mv-video-wrap">
         <div id="yt-player"></div>
         <div id="mv-curtain" class="mv-curtain"></div>
-        <div id="mv-ad-banner" style="display:none; position:absolute; inset:0; z-index:7; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:20px; pointer-events:none;">
-          <div style="font-size:2.4rem; margin-bottom:10px;">🍿🎬</div>
-          <div id="mv-ad-title" style="color:#fbbf24; font-size:1.15rem; font-weight:800; letter-spacing:0.5px; margin-bottom:6px;">Gleich hebt sich der Vorhang!</div>
-          <div id="mv-ad-sub" style="color:#cbd5e1; font-size:0.9rem; max-width:380px;">Noch ein kurzer Moment – spitzt schon mal die Ohren...</div>
+          <div id="mv-ad-banner" style="display:flex; position:absolute; inset:0; z-index:7; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:20px; pointer-events:none; transition: opacity 0.5s ease;">
+          <div style="font-size:2.6rem; margin-bottom:10px;">🍿🎬</div>
+          <div id="mv-ad-title" style="color:#fbbf24; font-size:1.15rem; font-weight:800; margin-bottom:6px;">Vor dem Trailer kann kurz Werbung zu hören sein</div>
+          <div id="mv-ad-sub" style="color:#e2e8f0; font-size:0.92rem; max-width:420px; line-height:1.4;">Genau genug Zeit, um noch schnell Popcorn zu holen – der Vorhang hebt sich gleich von selbst!</div>
         </div>
         <div class="mv-topmask"></div>
       </div>
@@ -409,51 +409,32 @@
     const fillEl = document.getElementById("mv-prog-fill");
     const t = I18N[uiLang];
 
-    const slogansDe = [
-      "Noch ein kurzer Moment – spitzt schon mal die Ohren...",
-      "Das Kino-Licht dimmt herunter – gleich startet der Ton!",
-      "Popcorn bereit? Der Trailer steht schon in den Startlöchern...",
-      "Ruhe im Saal – gleich beginnt das Rätselraten!"
-    ];
-    const slogansEn = [
-      "Just a moment – get your ears ready...",
-      "The cinema lights are dimming – audio starts shortly!",
-      "Popcorn ready? The trailer is about to begin...",
-      "Quiet in the theater – the guessing game starts in a second!"
-    ];
-    const pickedSlogan = uiLang === "de"
-      ? slogansDe.at(Math.floor(Math.random() * slogansDe.length))
-      : slogansEn.at(Math.floor(Math.random() * slogansEn.length));
+    adTitle.innerText = uiLang === "de"
+      ? "Vor dem Trailer kann kurz Werbung zu hören sein"
+      : "A short ad may play before the trailer";
+    adSub.innerText = uiLang === "de"
+      ? "Genau genug Zeit, um noch schnell Popcorn zu holen – der Vorhang hebt sich gleich von selbst!"
+      : "Just enough time to grab some popcorn – the curtain will rise automatically!";
 
     filterTimer = setInterval(function() {
       if (!ytPlayer || !ytReady || typeof ytPlayer.getDuration !== "function") return;
       const dur = ytPlayer.getDuration();
       const cur = ytPlayer.getCurrentTime();
-      const vData = (typeof ytPlayer.getVideoData === "function") ? ytPlayer.getVideoData() : null;
-      const activeId = vData && vData.video_id ? vData.video_id : "";
-
-      const isAdPlaying = (state.currentTrailerKey && activeId !== state.currentTrailerKey) || (dur > 0 && dur < 45);
-
-      if (isAdPlaying) {
-        if (typeof ytPlayer.mute === "function") ytPlayer.mute();
-        curtain.style.opacity = "1";
-        adTitle.innerText = uiLang === "de" ? "Gleich hebt sich der Vorhang!" : "The curtain rises shortly!";
-        adSub.innerText = pickedSlogan;
-        adBanner.style.display = "flex";
-        pctEl.innerText = uiLang === "de" ? "⏳ Bitte kurz Geduld..." : "⏳ Please wait...";
-        fillEl.style.width = "0%";
-        return;
-      }
 
       if (dur > 0) {
-        adBanner.style.display = "none";
-        if (typeof ytPlayer.isMuted === "function" && ytPlayer.isMuted() && typeof ytPlayer.unMute === "function") {
-          ytPlayer.unMute();
-        }
         const half = dur * 0.5;
         const progress = Math.min(1, cur / half);
         const opacity = Math.max(0, 1 - progress);
         curtain.style.opacity = opacity.toFixed(3);
+
+        // Solange der Vorhang noch über 80 % schwarz ist, bleibt das Popcorn-Schild sichtbar
+        if (opacity > 0.8) {
+          adBanner.style.display = "flex";
+          adBanner.style.opacity = ((opacity - 0.8) / 0.2).toFixed(2);
+        } else {
+          adBanner.style.display = "none";
+        }
+
         const visPct = Math.round(progress * 100);
         pctEl.innerText = t.vis + ": " + visPct + "%";
         fillEl.style.width = Math.min(100, Math.round((cur / dur) * 100)) + "%";
@@ -574,7 +555,7 @@
     const t = I18N[uiLang];
     clearInterval(filterTimer);
     document.getElementById("mv-curtain").style.opacity = "1";
-    document.getElementById("mv-ad-banner").style.display = "none";
+    document.getElementById("mv-ad-banner").style.opacity = "1";
     document.getElementById("filter-pct").innerText = t.vis + ": 0%";
     document.getElementById("mv-prog-fill").style.width = "0%";
     document.getElementById("turn-result").style.display = "none";
