@@ -34,6 +34,7 @@
   .mv-video-wrap iframe { width: 100%; height: 100%; border: 0; pointer-events: none; transform: scale(1.18); transform-origin: center center; }
   .mv-curtain { position: absolute; inset: 0; background: #000; opacity: 1; pointer-events: none; z-index: 5; transition: opacity 0.4s linear; }
   .mv-topmask { position: absolute; top: 0; left: 0; right: 0; height: 64px; background: linear-gradient(to bottom, #000 75%, transparent); z-index: 6; pointer-events: none; }
+  .mv-bottommask { position: absolute; bottom: 0; left: 0; right: 0; height: 64px; background: linear-gradient(to top, #000 75%, transparent); z-index: 6; pointer-events: none; }
   .mv-prog { height: 8px; background: #334155; border-radius: 99px; overflow: hidden; margin-bottom: 16px; }
   .mv-prog-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold), var(--ok)); transition: width 0.3s linear; }
   .mv-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-top: 12px; }
@@ -50,6 +51,7 @@
     .mv-logo { font-size: 1.35rem; }
     .mv-video-wrap { margin-bottom: 8px; border-radius: 8px; }
     .mv-topmask { height: 42px; }
+    .mv-bottommask { height: 42px; }
     .mv-prog { margin-bottom: 10px; }
     .mv-opts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
     .mv-opt { padding: 9px 10px; font-size: 0.82rem; line-height: 1.25; }
@@ -167,6 +169,7 @@
           <div id="mv-ad-sub" style="color:#e2e8f0; font-size:0.92rem; max-width:420px; line-height:1.4;">Genau genug Zeit, um noch schnell Popcorn zu holen – der Vorhang hebt sich gleich von selbst!</div>
         </div>
         <div class="mv-topmask"></div>
+        <div class="mv-bottommask"></div>
       </div>
 
       <div class="mv-prog"><div id="mv-prog-fill" class="mv-prog-fill"></div></div>
@@ -464,6 +467,8 @@
         curtain.style.opacity = opacity.toFixed(3);
         const topMask = document.querySelector(".mv-topmask");
         if (topMask) topMask.style.opacity = opacity.toFixed(3);
+        const bottomMask = document.querySelector(".mv-bottommask");
+        if (bottomMask) bottomMask.style.opacity = opacity.toFixed(3);
 
         const visPct = Math.round(progress * 100);
         pctEl.innerText = t.vis + ": " + visPct + "%";
@@ -591,6 +596,8 @@
     document.getElementById("mv-curtain").style.opacity = "1";
     const topMask = document.querySelector(".mv-topmask");
     if (topMask) topMask.style.opacity = "1";
+    const bottomMask = document.querySelector(".mv-bottommask");
+    if (bottomMask) bottomMask.style.opacity = "1";
     const adBanner = document.getElementById("mv-ad-banner");
     document.getElementById("mv-ad-title").innerText = uiLang === "de"
       ? "Vor dem Trailer kann kurz Werbung zu hören sein"
