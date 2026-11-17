@@ -33,8 +33,8 @@
   .mv-video-wrap { position: relative; width: 100%; aspect-ratio: 18.5 / 9; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 14px; border: 2px solid #334155; }
   .mv-video-wrap iframe { width: 100%; height: 100%; border: 0; pointer-events: none; transform: scale(1.18); transform-origin: center center; }
   .mv-curtain { position: absolute; inset: 0; background: #000; opacity: 1; pointer-events: none; z-index: 5; transition: opacity 0.4s linear; }
-  .mv-topmask { position: absolute; top: 0; left: 0; right: 0; height: 64px; background: linear-gradient(to bottom, #000 75%, transparent); z-index: 6; pointer-events: none; }
-  .mv-bottommask { position: absolute; bottom: 0; left: 0; right: 0; height: 64px; background: linear-gradient(to top, #000 75%, transparent); z-index: 6; pointer-events: none; }
+  .mv-topmask { position: absolute; top: 0; left: 0; right: 0; height: 84px; background: #000; z-index: 6; pointer-events: none; transition: opacity 0.3s linear; }
+  .mv-bottommask { position: absolute; bottom: 0; left: 0; right: 0; height: 84px; background: #000; z-index: 6; pointer-events: none; transition: opacity 0.3s linear; }
   .mv-prog { height: 8px; background: #334155; border-radius: 99px; overflow: hidden; margin-bottom: 16px; }
   .mv-prog-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--gold), var(--ok)); transition: width 0.3s linear; }
   .mv-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-top: 12px; }
@@ -50,8 +50,8 @@
     .mv-hdr { padding-bottom: 8px; margin-bottom: 12px; }
     .mv-logo { font-size: 1.35rem; }
     .mv-video-wrap { margin-bottom: 8px; border-radius: 8px; }
-    .mv-topmask { height: 42px; }
-    .mv-bottommask { height: 42px; }
+    .mv-topmask { height: 58px; }
+    .mv-bottommask { height: 58px; }
     .mv-prog { margin-bottom: 10px; }
     .mv-opts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
     .mv-opt { padding: 9px 10px; font-size: 0.82rem; line-height: 1.25; }
@@ -465,11 +465,15 @@
         const progress = Math.min(1, cur / half);
         const opacity = Math.max(0, 1 - progress);
         curtain.style.opacity = opacity.toFixed(3);
-        const topMask = document.querySelector(".mv-topmask");
-        if (topMask) topMask.style.opacity = opacity.toFixed(3);
-        const bottomMask = document.querySelector(".mv-bottommask");
-        if (bottomMask) bottomMask.style.opacity = opacity.toFixed(3);
-
+      // Balken bleiben 12 Sek. komplett schwarz (1.0) und faden dann in 3 Sek. (bis Sek. 15) komplett aus
+      let maskOpacity = 1;
+      if (cur > 12) {
+        maskOpacity = Math.max(0, 1 - ((cur - 12) / 3));
+      }
+      const topMask = document.querySelector(".mv-topmask");
+      if (topMask) topMask.style.opacity = maskOpacity.toFixed(3);
+      const bottomMask = document.querySelector(".mv-bottommask");
+      if (bottomMask) bottomMask.style.opacity = maskOpacity.toFixed(3);
         const visPct = Math.round(progress * 100);
         pctEl.innerText = t.vis + ": " + visPct + "%";
         fillEl.style.width = Math.min(100, Math.round((cur / dur) * 100)) + "%";
