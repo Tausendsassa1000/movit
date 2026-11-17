@@ -115,10 +115,9 @@
       </div>
 
       <div class="mv-box">
-        <label class="mv-lbl" id="lbl-players">3. Spieler eintragen (min. 2)</label>
+        <label class="mv-lbl" id="lbl-players">3. Spieler eintragen (min. 1)</label>
         <div id="player-list">
           <input type="text" class="mv-inp mv-pin" value="Spieler 1">
-          <input type="text" class="mv-inp mv-pin" value="Spieler 2">
         </div>
         <button type="button" id="btn-add-player" class="mv-btn mv-btn-sec">+ Spieler hinzufügen</button>
       </div>
@@ -297,7 +296,7 @@
     currentMovie: null, stepsData: [], pendingAction: null
   };
 
-  const savedKey = 8ff9a1e0bcaaeae222cad93a580df9c6;
+  const savedKey = "8ff9a1e0bcaaeae222cad93a580df9c6";
   if (savedKey) document.getElementById("inp-apikey").value = savedKey;
 
   window.onYouTubeIframeAPIReady = function() {
@@ -430,7 +429,6 @@
       }
     }, 250);
   }
-
   async function findMovieWithTrailer() {
     const langCode = cfg.trailerLang === "en" ? "en-US" : (uiLang === "de" ? "de-DE" : "en-US");
     const textLang = uiLang === "de" ? "de-DE" : "en-US";
