@@ -59,7 +59,7 @@
   </div>
   <!-- 1. SETUP SCREEN -->
   <div id="scr-setup" class="mv-scr act">
-    <div class="mv-box">
+    <div class="mv-box" style="display:none;">
       <label class="mv-lbl" id="lbl-apikey">1. TMDb API-Schlüssel (wird lokal gespeichert)</label>
       <input type="password" id="inp-apikey" class="mv-inp" placeholder="32-stelligen TMDb API-Key v3 einfügen...">
       <div style="font-size:0.8rem; color:var(--mut);" id="lbl-apihelp">Kostenlos erhältlich auf themoviedb.org unter Einstellungen → API.</div>
@@ -127,6 +127,7 @@
     <div style="text-align:center; margin-top:10px;">
       <button type="button" id="btn-start" class="mv-btn" style="padding:15px 40px; font-size:1.1rem;">🎬 Spiel starten</button>
       <p id="setup-err" style="color:var(--no); font-size:0.9rem; margin-top:10px;"></p>
+      <div id="lbl-tmdb-credit" style="margin-top:16px; font-size:0.78rem; color:#94a3b8;">Filmdaten bereitgestellt von TMDb</div>
     </div>
   </div>
 
@@ -296,7 +297,7 @@
     currentMovie: null, stepsData: [], pendingAction: null
   };
 
-  const savedKey = localStorage.getItem("movit_tmdb_key");
+  const savedKey = 8ff9a1e0bcaaeae222cad93a580df9c6;
   if (savedKey) document.getElementById("inp-apikey").value = savedKey;
 
   window.onYouTubeIframeAPIReady = function() {
@@ -331,6 +332,7 @@
     document.getElementById("lbl-players").innerText = t.players;
     document.getElementById("btn-add-player").innerText = t.addP;
     document.getElementById("btn-start").innerText = t.start;
+    document.getElementById("lbl-tmdb-credit").innerText = uiLang === "de" ? "Filmdaten bereitgestellt von TMDb" : "Movie data provided by TMDb";
     document.getElementById("btn-skip-movie").innerText = t.skip;
     document.getElementById("btn-replay-fanfare").innerText = t.replay;
     document.getElementById("btn-restart").innerText = t.restart;
