@@ -407,7 +407,7 @@
     const fillEl = document.getElementById("mv-prog-fill");
     const t = I18N[uiLang];
 
-    // Sobald der echte Trailer startet, verschwindet das Popcorn-Schild sofort!
+    // Verschwindet sofort ohne Verzögerung, sobald der Trailer startet
     adBanner.style.display = "none";
 
     filterTimer = setInterval(function() {
@@ -416,6 +416,7 @@
       const cur = ytPlayer.getCurrentTime();
 
       if (dur > 0) {
+        adBanner.style.display = "none";
         const half = dur * 0.5;
         const progress = Math.min(1, cur / half);
         const opacity = Math.max(0, 1 - progress);
@@ -541,6 +542,15 @@
     const t = I18N[uiLang];
     clearInterval(filterTimer);
     document.getElementById("mv-curtain").style.opacity = "1";
+    const adBanner = document.getElementById("mv-ad-banner");
+    document.getElementById("mv-ad-title").innerText = uiLang === "de"
+      ? "Vor dem Trailer kann kurz Werbung zu hören sein"
+      : "A short ad may play before the trailer";
+    document.getElementById("mv-ad-sub").innerText = uiLang === "de"
+      ? "Genau genug Zeit, um noch schnell Popcorn zu holen – der Vorhang hebt sich gleich von selbst!"
+      : "Just enough time to grab some popcorn – the curtain will rise automatically!";
+    adBanner.style.display = "flex";
+    adBanner.style.opacity = "1";
     document.getElementById("mv-ad-banner").style.display = "flex";
     document.getElementById("mv-ad-banner").style.opacity = "1";
     document.getElementById("filter-pct").innerText = t.vis + ": 0%";
