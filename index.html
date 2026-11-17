@@ -43,6 +43,18 @@
   .mv-opt.no { background: rgba(239, 68, 68, 0.25); border-color: var(--no); color: #fca5a5; }
   .mv-oscar { font-size: 4.5rem; margin: 10px 0; filter: drop-shadow(0 0 18px rgba(245,158,11,0.7)); animation: mvFloat 2.5s ease-in-out infinite; }
   @keyframes mvFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    @media (max-width: 600px) {
+    #mv-app { padding: 12px; margin: 6px auto; border-radius: 10px; }
+    .mv-box { padding: 10px !important; margin-bottom: 10px; }
+    .mv-hdr { padding-bottom: 8px; margin-bottom: 12px; }
+    .mv-logo { font-size: 1.35rem; }
+    .mv-video-wrap { margin-bottom: 8px; border-radius: 8px; }
+    .mv-topmask { height: 42px; }
+    .mv-prog { margin-bottom: 10px; }
+    .mv-opts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+    .mv-opt { padding: 9px 10px; font-size: 0.82rem; line-height: 1.25; }
+    #question-text { font-size: 0.98rem !important; margin-bottom: 6px !important; }
+  }
 </style>
 </head>
 <body style="margin:0; padding:10px; background:#090d16;">
@@ -441,10 +453,12 @@
 
       if (dur > 0) {
         adBanner.style.display = "none";
-        const half = dur * 0.5;
+        const half = Math.min(10, dur * 0.5);
         const progress = Math.min(1, cur / half);
         const opacity = Math.max(0, 1 - progress);
         curtain.style.opacity = opacity.toFixed(3);
+        const topMask = document.querySelector(".mv-topmask");
+        if (topMask) topMask.style.opacity = opacity.toFixed(3);
 
         const visPct = Math.round(progress * 100);
         pctEl.innerText = t.vis + ": " + visPct + "%";
@@ -570,6 +584,8 @@
     const t = I18N[uiLang];
     clearInterval(filterTimer);
     document.getElementById("mv-curtain").style.opacity = "1";
+    const topMask = document.querySelector(".mv-topmask");
+    if (topMask) topMask.style.opacity = "1";
     const adBanner = document.getElementById("mv-ad-banner");
     document.getElementById("mv-ad-title").innerText = uiLang === "de"
       ? "Vor dem Trailer kann kurz Werbung zu hören sein"
@@ -609,7 +625,7 @@
     }
   }
 
-  function renderStep() {
+    function renderStep() {
     const s = state.stepsData.at(state.step);
     document.getElementById("step-label").innerText = s.badge;
     document.getElementById("question-text").innerText = s.q;
@@ -621,7 +637,29 @@
       btn.type = "button";
       btn.className = "mv-opt";
       btn.innerText = opt.label;
-      btn.addEventListener("click", function() { handleAnswer(opt, btn); });
+
+      let startY = 0;
+      let wasMoved = false;
+      btn.addEventListener("touchstart", function(e) {
+        if (e.touches && e.touches.length > 0) {
+          startY = e.touches.at(0).clientY;
+          wasMoved = false;
+        }
+      }, { passive: true });
+      btn.addEventListener("touchmove", function(e) {
+        if (e.touches && e.touches.length > 0 && Math.abs(e.touches.at(0).clientY - startY) > 10) {
+          wasMoved = true;
+        }
+      }, { passive: true });
+
+      btn.addEventListener("click", function(e) {
+        if (wasMoved) {
+          wasMoved = false;
+          e.preventDefault();
+          return;
+        }
+        handleAnswer(opt, btn);
+      });
       grid.appendChild(btn);
     });
   }
