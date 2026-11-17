@@ -597,7 +597,7 @@
       state.currentMovie = movieData.details;
       state.stepsData = await buildQuizSteps(movieData);
       state.step = 0;
-      state.turnFinished =false;
+      state.turnFinished = false;
 
       if (ytPlayer && ytReady) {
         state.currentTrailerKey = movieData.trailerKey;
