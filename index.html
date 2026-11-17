@@ -404,7 +404,20 @@
       if (!ytPlayer || !ytReady || typeof ytPlayer.getDuration !== "function") return;
       const dur = ytPlayer.getDuration();
       const cur = ytPlayer.getCurrentTime();
-      if (dur > 0) {
+
+      // Echte Trailer sind mindestens 45 Sek. lang – kürzere Clips sind Werbespots!
+      if (dur > 0 && dur < 45) {
+        if (typeof ytPlayer.mute === "function") ytPlayer.mute();
+        curtain.style.opacity = "1";
+        pctEl.innerText = uiLang === "de" ? "⏳ Werbung wird stumm übersprungen..." : "⏳ Skipping ad silently...";
+        fillEl.style.width = "0%";
+        return;
+      }
+
+      if (dur >= 45) {
+        if (typeof ytPlayer.isMuted === "function" && ytPlayer.isMuted() && typeof ytPlayer.unMute === "function") {
+          ytPlayer.unMute();
+        }
         const half = dur * 0.5;
         const progress = Math.min(1, cur / half);
         const opacity = Math.max(0, 1 - progress);
