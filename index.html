@@ -298,7 +298,7 @@
   let state = {
     players: [], curIdx: 0, moviesInTurn: 0, step: 0,
     isTiebreaker: false, tieCandidates: [], tieStepIdx: 0,
-    currentMovie: null, currentTrailerKey: "", stepsData: [], pendingAction: null
+    currentMovie: null, currentTrailerKey: "", turnFinished: false, stepsData: [], pendingAction: null
   };
 
   const savedKey = "8ff9a1e0bcaaeae222cad93a580df9c6";
@@ -311,7 +311,8 @@
       events: {
         onReady: function() { ytReady = true; },
         onStateChange: function(e) {
-          if (e.data === YT.PlayerState.PLAYING) startCurtainLoop();
+           if (e.data === YT.PlayerState.PLAYING) startCurtainLoop();
+          if (e.data === YT.PlayerState.ENDED) handleTimeUp();
         }
       }
     });
@@ -399,6 +400,31 @@
     if (!res.ok) throw new Error("TMDb API Fehler (" + res.status + ") – bitte API-Key prüfen.");
     return await res.json();
   }
+  function handleTimeUp() {
+    if (state.turnFinished) return;
+    state.turnFinished = true;
+    clearInterval(filterTimer);
+
+    const t = I18N[uiLang];
+    const allBtns = document.querySelectorAll("#options-grid .mv-opt");
+    allBtns.forEach(b => { b.disabled = true; });
+
+    if (state.stepsData && state.stepsData.at(state.step)) {
+      const correctOpt = state.stepsData.at(state.step).opts.find(o => o.ok);
+      allBtns.forEach(b => { if (correctOpt && b.innerText === correctOpt.label) b.classList.add("ok"); });
+    }
+
+    document.getElementById("mv-curtain").style.opacity = "0";
+    document.getElementById("mv-ad-banner").style.display = "none";
+
+    const resBox = document.getElementById("turn-result");
+    resBox.style.display = "block";
+    document.getElementById("res-title").innerHTML = "<span style='color:#ef4444;'>" + (uiLang === "de" ? "⏰ Zeit abgelaufen – Trailer beendet!" : "⏰ Time's up – Trailer ended!") + "</span>";
+    document.getElementById("res-detail").innerText = (state.currentMovie ? state.currentMovie.title + " (" + (state.currentMovie.release_date || "").slice(0, 4) + ")" : "");
+    document.getElementById("btn-continue").innerText = t.nextBtn;
+    state.pendingAction = "next_player";
+  }
+
   function startCurtainLoop() {
     clearInterval(filterTimer);
     const curtain = document.getElementById("mv-curtain");
@@ -407,7 +433,6 @@
     const fillEl = document.getElementById("mv-prog-fill");
     const t = I18N[uiLang];
 
-    // Verschwindet sofort ohne Verzögerung, sobald der Trailer startet
     adBanner.style.display = "none";
 
     filterTimer = setInterval(function() {
@@ -425,6 +450,10 @@
         const visPct = Math.round(progress * 100);
         pctEl.innerText = t.vis + ": " + visPct + "%";
         fillEl.style.width = Math.min(100, Math.round((cur / dur) * 100)) + "%";
+
+        if (cur >= dur - 0.5 && !state.turnFinished) {
+          handleTimeUp();
+        }
       }
     }, 250);
   }
@@ -569,6 +598,7 @@
       state.currentMovie = movieData.details;
       state.stepsData = await buildQuizSteps(movieData);
       state.step = 0;
+      state.turnFinished =false;
 
       if (ytPlayer && ytReady) {
         state.currentTrailerKey = movieData.trailerKey;
@@ -598,10 +628,10 @@
   }
 
   function handleAnswer(opt, clickedBtn) {
+    if (state.turnFinished) return;
     const t = I18N[uiLang];
     const allBtns = document.querySelectorAll("#options-grid .mv-opt");
     allBtns.forEach(b => { b.disabled = true; });
-
     const curPlayer = state.players.at(state.curIdx);
 
     if (opt.ok) {
@@ -611,10 +641,12 @@
 
       if (state.step < 4) {
         setTimeout(function() {
+          if (state.turnFinished) return;
           state.step += 1;
           renderStep();
         }, 650);
       } else {
+        state.turnFinished = true;
         document.getElementById("mv-curtain").style.opacity = "0";
         state.moviesInTurn += 1;
         const resBox = document.getElementById("turn-result");
@@ -632,6 +664,7 @@
         }
       }
     } else {
+      state.turnFinished = true;
       clickedBtn.classList.add("no");
       const correctOpt = state.stepsData.at(state.step).opts.find(o => o.ok);
       allBtns.forEach(b => { if (correctOpt && b.innerText === correctOpt.label) b.classList.add("ok"); });
@@ -643,6 +676,8 @@
       document.getElementById("res-detail").innerText = (state.currentMovie ? state.currentMovie.title + " (" + (state.currentMovie.release_date || "").slice(0, 4) + ")" : "");
       document.getElementById("btn-continue").innerText = t.nextBtn;
       state.pendingAction = "next_player";
+    }
+  }
     }
   }
 
