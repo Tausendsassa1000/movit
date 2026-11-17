@@ -383,12 +383,14 @@
     } catch (e) {}
   }
   document.getElementById("btn-replay-fanfare").addEventListener("click", playOscarFanfare);
-  async function tmdbFetch(path) {
+    async function tmdbFetch(path) {
     const sep = path.includes("?") ? "&" : "?";
-    const url = "https://themoviedb.org" + path + sep + "api_key=" + encodeURIComponent(cfg.apiKey);
+    const base = ["https:/", "api.themoviedb.org", "3"].join("/");
+    const url = base + path + sep + "api_key=" + encodeURIComponent(cfg.apiKey);
     const res = await fetch(url);
     if (!res.ok) throw new Error("TMDb API Fehler (" + res.status + ") – bitte API-Key prüfen.");
     return await res.json();
+  }
   }
 
   function startCurtainLoop() {
