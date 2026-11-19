@@ -5,17 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MOVIT | Das Kino-Trailer-Quiz</title>
 <style>
-  #mv-app {
-    --bg: #0f172a; --card: #1e293b; --gold: #f59e0b; --gold-l: #fbbf24;
+  body:has(> #gameRoot) { margin: 0; padding: 0; background: #090d16; }
+  #gameRoot {
+    --bg: #0f172a; --card: #1e293b; --gold: #fbbf24; --gold-l: #fbbf24; --cyan: #38bdf8;
     --ok: #10b981; --no: #ef4444; --txt: #f8fafc; --mut: #94a3b8;
     font-family: system-ui, -apple-system, sans-serif;
-    background: var(--bg); color: var(--txt); max-width: 900px;
-    margin: 15px auto; padding: 24px; border-radius: 16px;
+    background: var(--bg); color: var(--txt); max-width: 860px; min-height: 66dvh;
+    margin: 10px auto; padding: 18px; border-radius: 18px;
     box-shadow: 0 12px 35px rgba(0,0,0,0.5); box-sizing: border-box;
   }
-  #mv-app *, #mv-app *::before, #mv-app *::after { box-sizing: border-box; }
-  .mv-hdr { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 14px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-  .mv-logo { font-size: 1.7rem; font-weight: 900; letter-spacing: 2px; color: var(--gold); margin: 0; }
+  #gameRoot *, #gameRoot *::before, #gameRoot *::after { box-sizing: border-box; }
+  #gameRoot.fullscreen-play {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 2147483647;
+    max-width: none; width: 100%; height: 100dvh; min-height: 100dvh;
+    margin: 0; border-radius: 0; padding: 10px 14px;
+    overflow: hidden; overscroll-behavior: none; touch-action: manipulation;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  #gameRoot.fullscreen-play #scr-game.act {
+    width: 100%; max-width: 860px; margin: 0 auto;
+    display: flex; flex-direction: column; justify-content: center; max-height: 100%;
+  }
+  .ka2-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-bottom: 10px; margin-bottom: 12px; border-bottom: 1px solid #334155; }
+  #gameRoot.fullscreen-play .ka2-bar { width: 100%; max-width: 860px; margin: 0 auto 8px auto; padding-bottom: 6px; flex-shrink: 0; }
+  .ka2-brand { display: flex; align-items: center; gap: 8px; font-size: 0.92rem; font-weight: 700; color: var(--txt); }
+  .ka2-actions { display: flex; align-items: center; gap: 8px; }
+  .mv-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  .mv-logo { font-size: 1.55rem; font-weight: 900; letter-spacing: 2px; color: var(--gold); margin: 0; }
   .mv-logo span { font-size: 0.85rem; color: var(--mut); font-weight: 400; letter-spacing: 0; }
   .mv-box { background: var(--card); padding: 18px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #334155; }
   .mv-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
@@ -42,38 +58,76 @@
   .mv-opt:hover:not(:disabled) { border-color: var(--gold); background: #1e293b; }
   .mv-opt.ok { background: rgba(16, 185, 129, 0.25); border-color: var(--ok); color: #6ee7b7; }
   .mv-opt.no { background: rgba(239, 68, 68, 0.25); border-color: var(--no); color: #fca5a5; }
-  .mv-oscar { font-size: 4.5rem; margin: 10px 0; filter: drop-shadow(0 0 18px rgba(245,158,11,0.7)); animation: mvFloat 2.5s ease-in-out infinite; }
+  .mv-oscar { font-size: 4.5rem; margin: 10px 0; filter: drop-shadow(0 0 18px rgba(251,191,36,0.7)); animation: mvFloat 2.5s ease-in-out infinite; }
   @keyframes mvFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-    @media (max-width: 600px) {
-    #mv-app { padding: 12px; margin: 6px auto; border-radius: 10px; }
-    .mv-box { padding: 10px !important; margin-bottom: 10px; }
-    .mv-hdr { padding-bottom: 8px; margin-bottom: 12px; }
-    .mv-logo { font-size: 1.35rem; }
-    .mv-video-wrap { margin-bottom: 8px; border-radius: 8px; }
-    .mv-topmask { height: 58px; }
-    .mv-bottommask { height: 58px; }
-    .mv-prog { margin-bottom: 10px; }
-    .mv-opts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
-    .mv-opt { padding: 9px 10px; font-size: 0.82rem; line-height: 1.25; }
-    #question-text { font-size: 0.98rem !important; margin-bottom: 6px !important; }
+  #mv-rotate-warn { display: none; position: fixed; inset: 0; z-index: 2147483647; background: #0f172a; color: #f8fafc; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 24px; }
+  @media (orientation: landscape) and (max-height: 460px) and (pointer: coarse) {
+    #gameRoot.fullscreen-play #mv-rotate-warn { display: flex; }
+  }
+  @media (max-width: 600px) {
+    #gameRoot { min-height: auto; padding: 10px; margin: 6px auto; border-radius: 14px; }
+    #gameRoot.fullscreen-play { justify-content: flex-start; padding: 8px 10px; border-radius: 0; }
+    #gameRoot.fullscreen-play #scr-game.act { justify-content: flex-start; }
+    .mv-box { padding: 8px !important; margin-bottom: 8px; }
+    .mv-scores { margin-bottom: 6px; gap: 4px; }
+    .mv-pbadge { padding: 4px 10px; font-size: 0.78rem; }
+    .mv-logo { font-size: 1.3rem; }
+    .mv-video-wrap { margin-bottom: 6px; border-radius: 8px; max-height: 27dvh; }
+    .mv-topmask { height: 48px; }
+    .mv-bottommask { height: 48px; }
+    .mv-prog { margin-bottom: 6px; height: 6px; }
+    .mv-opts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin-top: 6px; }
+    .mv-opt { padding: 7px 8px; font-size: 0.78rem; line-height: 1.2; }
+    #question-text { font-size: 0.92rem !important; margin-bottom: 4px !important; }
   }
 </style>
 </head>
-<body style="margin:0; padding:10px; background:#090d16;">
+<body>
 
-<div id="mv-app">
-  <div class="mv-hdr">
-    <h1 class="mv-logo">MOVIT <span id="ui-sub">| Kino-Trailer-Quiz</span></h1>
-    <div style="display:flex; gap:8px; align-items:center;">
-      <select id="sel-ui-lang" class="mv-sel" style="width:auto; margin:0; padding:6px 10px; font-size:0.85rem;">
-        <option value="de" selected>🌐 Deutsch</option>
-        <option value="en">🌐 English</option>
+<div id="gameRoot">
+  <div id="mv-rotate-warn">
+    <div style="font-size:2.4rem; color:#fbbf24; margin-bottom:10px;">↺</div>
+    <div style="font-size:1.1rem; font-weight:800; margin-bottom:6px;">Bitte Smartphone hochkant drehen</div>
+    <div style="font-size:0.9rem; color:#94a3b8;">MOVIT ist auf dem Smartphone für das Hochformat optimiert.</div>
+  </div>
+
+  <div class="ka2-bar">
+    <div class="ka2-brand">
+      <svg width="44" height="19" viewBox="0 0 220 95" aria-label="KA2 Logo" style="display:block; flex-shrink:0;">
+        <defs><clipPath id="ka2-oval"><ellipse cx="110" cy="47.5" rx="110" ry="47.5"/></clipPath></defs>
+        <g clip-path="url(#ka2-oval)">
+          <rect x="0" y="0" width="220" height="95" fill="#4f4f4f"/>
+          <rect x="42" y="0" width="52" height="95" fill="#0068b7"/>
+          <polygon points="42,50 86,95 42,95" fill="#00b4ed"/>
+          <polygon points="88,28 122,74 88,74" fill="#39a935"/>
+          <rect x="88" y="74" width="54" height="21" fill="#ffed00"/>
+          <polygon points="62,0 185,0 185,74 118,74" fill="#e30613"/>
+          <polygon points="164,0 185,0 185,74 176,74" fill="#ea5b0c"/>
+          <polygon points="142,74 185,74 172,95 142,95" fill="#e6007e"/>
+          <path d="M36,0 H47 V45 L88,0 H103 L61,46 L104,95 H89 L47,48 V95 H36 Z" fill="#2d2d2d"/>
+          <path d="M111,0 H123 L156,95 H144 L136,72 H98 L90,95 H78 Z M102,62 H132 L117,17 Z" fill="#2d2d2d"/>
+          <path d="M138,26 C138,10 150,2 164,2 C178,2 187,11 187,25 C187,39 177,48 161,61 L148,72 H187 V83 H134 V73 L153,56 C168,43 175,36 175,25 C175,17 170,12 163,12 C155,12 150,18 150,27 Z" fill="#2d2d2d"/>
+        </g>
+      </svg>
+      <span>ka-2.art Games</span>
+    </div>
+    <div class="ka2-actions">
+      <select id="sel-ui-lang" class="mv-sel" style="width:auto; margin:0; padding:5px 9px; font-size:0.82rem;">
+        <option value="de" selected>Deutsch</option>
+        <option value="en">English</option>
       </select>
+      <button type="button" id="exitFsBtn" class="mv-btn mv-btn-sec" style="display:none; padding:5px 11px; font-size:0.82rem;">✕ Menü</button>
     </div>
   </div>
+
   <!-- 1. SETUP SCREEN -->
   <div id="scr-setup" class="mv-scr act">
+    <div class="mv-hdr">
+      <h1 class="mv-logo">MOVIT <span id="ui-sub">| Kino-Trailer-Quiz</span></h1>
+      <button type="button" id="btn-resume-game" class="mv-btn" style="display:none; padding:8px 16px; font-size:0.88rem;">▶ Laufendes Spiel fortsetzen</button>
+    </div>
     <div class="mv-box" style="display:none;">
+
       <label class="mv-lbl" id="lbl-apikey">1. TMDb API-Schlüssel (wird lokal gespeichert)</label>
       <input type="password" id="inp-apikey" class="mv-inp" placeholder="32-stelligen TMDb API-Key v3 einfügen...">
       <div style="font-size:0.8rem; color:var(--mut);" id="lbl-apihelp">Kostenlos erhältlich auf themoviedb.org unter Einstellungen → API.</div>
@@ -138,9 +192,9 @@
     </div>
 
     <div style="text-align:center; margin-top:10px;">
-      <button type="button" id="btn-start" class="mv-btn" style="padding:15px 40px; font-size:1.1rem;">🎬 Spiel starten</button>
-      <p id="setup-err" style="color:var(--no); font-size:0.9rem; margin-top:10px;"></p>
-      <div id="lbl-tmdb-credit" style="margin-top:16px; font-size:0.78rem; color:#94a3b8;">Filmdaten bereitgestellt von TMDb</div>
+      <button type="button" id="btn-start" class="mv-btn" style="padding:14px 36px; font-size:1.05rem;">▶ Spiel starten</button>
+      <p id="setup-err" style="color:var(--no); font-size:0.9rem; margin-top:8px;"></p>
+      <div id="lbl-tmdb-credit" style="margin-top:10px; font-size:0.78rem; color:#94a3b8;">Filmdaten bereitgestellt von TMDb</div>
     </div>
   </div>
 
@@ -163,10 +217,11 @@
       <div class="mv-video-wrap">
         <div id="yt-player"></div>
         <div id="mv-curtain" class="mv-curtain"></div>
-          <div id="mv-ad-banner" style="display:flex; position:absolute; inset:0; z-index:7; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:20px; pointer-events:none; transition: opacity 0.5s ease;">
-          <div style="font-size:2.6rem; margin-bottom:10px;">🍿🎬</div>
-          <div id="mv-ad-title" style="color:#fbbf24; font-size:1.15rem; font-weight:800; margin-bottom:6px;">Vor dem Trailer kann kurz Werbung zu hören sein</div>
-          <div id="mv-ad-sub" style="color:#e2e8f0; font-size:0.92rem; max-width:420px; line-height:1.4;">Genau genug Zeit, um noch schnell Popcorn zu holen – der Vorhang hebt sich gleich von selbst!</div>
+        <div id="mv-ad-banner" style="display:flex; position:absolute; inset:0; z-index:7; flex-direction:column; justify-content:center; align-items:center; text-align:center; padding:16px; cursor:pointer; transition: opacity 0.5s ease;">
+          <div style="font-size:1.8rem; color:#fbbf24; margin-bottom:6px;">♪ ▶</div>
+          <div id="mv-ad-title" style="color:#fbbf24; font-size:1.05rem; font-weight:800; margin-bottom:4px;">Vor dem Trailer kann kurz Werbung zu hören sein</div>
+          <div id="mv-ad-sub" style="color:#e2e8f0; font-size:0.86rem; max-width:420px; line-height:1.35;">Genau genug Zeit, um noch schnell Popcorn zu holen – der Vorhang hebt sich gleich von selbst!</div>
+          <button type="button" id="btn-ipad-unmute" class="mv-btn" style="display:none; margin-top:10px; padding:7px 16px; font-size:0.84rem;">♪ Ton &amp; Trailer aktivieren</button>
         </div>
         <div class="mv-topmask"></div>
         <div class="mv-bottommask"></div>
@@ -192,16 +247,17 @@
   </div>
 
   <!-- 3. WINNER / OSCAR SCREEN -->
-  <div id="scr-winner" class="mv-scr" style="text-align:center; padding:25px 15px;">
-    <div class="mv-oscar">🏆</div>
+  <div id="scr-winner" class="mv-scr" style="text-align:center; padding:20px 15px;">
+    <div class="mv-oscar">★</div>
     <div id="win-subtitle" style="color:var(--gold-l); font-size:0.95rem; text-transform:uppercase; letter-spacing:2px; font-weight:700;">AND THE OSCAR GOES TO...</div>
     <h2 id="win-name" style="color:var(--gold); font-size:2.2rem; margin:8px 0 14px;">Spieler 1</h2>
     <p id="win-score-txt" style="color:#cbd5e1; font-size:1.1rem; margin-bottom:20px;"></p>
     <div id="final-table" class="mv-box" style="max-width:440px; margin:0 auto 24px;"></div>
-    <button type="button" id="btn-replay-fanfare" class="mv-btn mv-btn-sec" style="margin-right:10px;">🎺 Fanfare abspielen</button>
+    <button type="button" id="btn-replay-fanfare" class="mv-btn mv-btn-sec" style="margin-right:10px;">♪ Fanfare abspielen</button>
     <button type="button" id="btn-restart" class="mv-btn">Neues Spiel</button>
   </div>
 </div>
+
 <script>
 (function() {
   var s = document.createElement("script");
@@ -302,18 +358,67 @@
     }
   };
 
+  function getT() {
+    return uiLang === "en" ? I18N.en : I18N.de;
+  }
+
   let uiLang = "de";
   let ytPlayer = null;
   let ytReady = false;
   let filterTimer = null;
+  let adWatchdogTimer = null;
   let usedMovieIds = new Set();
+  let gameActive = false;
+  let rootPlaceholder = null;
 
   let cfg = { apiKey: "", trailerLang: "de", genre: "all", fsk: "18", choices: 8, target: 25 };
   let state = {
-    players: [], curIdx: 0, moviesInTurn: 0, step: 0,
-    isTiebreaker: false, tieCandidates: [], tieStepIdx: 0,
-    currentMovie: null, currentTrailerKey: "", turnFinished: false, stepsData: [], pendingAction: null
+    players: new Array(), curIdx: 0, moviesInTurn: 0, step: 0,
+    isTiebreaker: false, tieCandidates: new Array(), tieStepIdx: 0,
+    currentMovie: null, currentTrailerKey: "", turnFinished: false, stepsData: new Array(), pendingAction: null
   };
+
+  function enterFullscreen() {
+    const root = document.getElementById("gameRoot");
+    if (!root) return;
+    if (!rootPlaceholder && root.parentNode !== document.body) {
+      rootPlaceholder = document.createComment("gameRoot-anchor");
+      root.parentNode.insertBefore(rootPlaceholder, root);
+      document.body.appendChild(root);
+    }
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    root.classList.add("fullscreen-play");
+    document.getElementById("exitFsBtn").style.display = "inline-block";
+  }
+
+  function exitFullscreen() {
+    const root = document.getElementById("gameRoot");
+    if (!root) return;
+    root.classList.remove("fullscreen-play");
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
+    if (rootPlaceholder && rootPlaceholder.parentNode) {
+      rootPlaceholder.parentNode.insertBefore(root, rootPlaceholder);
+      rootPlaceholder.parentNode.removeChild(rootPlaceholder);
+      rootPlaceholder = null;
+    }
+    document.getElementById("exitFsBtn").style.display = "none";
+    if (ytPlayer && ytReady && typeof ytPlayer.pauseVideo === "function") {
+      try { ytPlayer.pauseVideo(); } catch (e) {}
+    }
+    showScreen("scr-setup");
+    document.getElementById("btn-resume-game").style.display = gameActive ? "inline-block" : "none";
+  }
+
+  function unlockYouTubeAudio() {
+    if (!ytPlayer || !ytReady) return;
+    try {
+      if (typeof ytPlayer.unMute === "function") ytPlayer.unMute();
+      if (typeof ytPlayer.setVolume === "function") ytPlayer.setVolume(100);
+      if (typeof ytPlayer.playVideo === "function") ytPlayer.playVideo();
+    } catch (e) {}
+  }
 
   const savedKey = "8ff9a1e0bcaaeae222cad93a580df9c6";
   if (savedKey) document.getElementById("inp-apikey").value = savedKey;
@@ -323,9 +428,13 @@
       height: "100%", width: "100%",
       playerVars: { autoplay: 1, controls: 0, modestbranding: 1, rel: 0, iv_load_policy: 3, cc_load_policy: 0, fs: 0, playsinline: 1 },
       events: {
-        onReady: function() { ytReady = true; },
+        onReady: function() {
+          ytReady = true;
+          unlockYouTubeAudio();
+        },
         onStateChange: function(e) {
           if (e.data === YT.PlayerState.PLAYING) {
+            unlockYouTubeAudio();
             if (ytPlayer && typeof ytPlayer.unloadModule === "function") {
               try { ytPlayer.unloadModule("captions"); ytPlayer.unloadModule("cc"); } catch (err) {}
             }
@@ -336,6 +445,39 @@
       }
     });
   };
+
+  function startAdWatchdog() {
+    clearInterval(adWatchdogTimer);
+    let stalledTicks = 0;
+    const unmuteBtn = document.getElementById("btn-ipad-unmute");
+    if (unmuteBtn) unmuteBtn.style.display = "none";
+
+    adWatchdogTimer = setInterval(function() {
+      if (!ytPlayer || !ytReady || typeof ytPlayer.getPlayerState !== "function") return;
+      const pState = ytPlayer.getPlayerState();
+      const dur = typeof ytPlayer.getDuration === "function" ? ytPlayer.getDuration() : 0;
+
+      if (pState === YT.PlayerState.PLAYING && dur > 0) {
+        clearInterval(adWatchdogTimer);
+        if (unmuteBtn) unmuteBtn.style.display = "none";
+        return;
+      }
+
+      stalledTicks += 1;
+      if (pState === YT.PlayerState.PAUSED || pState === YT.PlayerState.CUED || pState === YT.PlayerState.UNSTARTED) {
+        unlockYouTubeAudio();
+      }
+      if (stalledTicks >= 3 && unmuteBtn) {
+        unmuteBtn.style.display = "inline-block";
+      }
+    }, 1000);
+  }
+
+  document.getElementById("mv-ad-banner").addEventListener("click", function() {
+    unlockYouTubeAudio();
+    const unmuteBtn = document.getElementById("btn-ipad-unmute");
+    if (unmuteBtn) unmuteBtn.style.display = "none";
+  });
 
   function applyLanguage() {
     uiLang = document.getElementById("sel-ui-lang").value;
@@ -381,7 +523,9 @@
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      const tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+      const tmp = a.at(i);
+      a.splice(i, 1, a.at(j));
+      a.splice(j, 1, tmp);
     }
     return a;
   }
@@ -389,14 +533,14 @@
   function playOscarFanfare() {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const notes = [
+      const notes = Array.of(
         { f: 392.00, t: 0.0, d: 0.18 },
         { f: 523.25, t: 0.2, d: 0.18 },
         { f: 659.25, t: 0.4, d: 0.18 },
         { f: 783.99, t: 0.6, d: 0.45 },
         { f: 659.25, t: 1.1, d: 0.2 },
         { f: 783.99, t: 1.35, d: 0.9 }
-      ];
+      );
       notes.forEach(n => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -423,8 +567,9 @@
     if (state.turnFinished) return;
     state.turnFinished = true;
     clearInterval(filterTimer);
+    clearInterval(adWatchdogTimer);
 
-    const t = I18N[uiLang];
+    const t = getT();
     const allBtns = document.querySelectorAll("#options-grid .mv-opt");
     allBtns.forEach(b => { b.disabled = true; });
 
@@ -438,7 +583,7 @@
 
     const resBox = document.getElementById("turn-result");
     resBox.style.display = "block";
-    document.getElementById("res-title").innerHTML = "<span style='color:#ef4444;'>" + (uiLang === "de" ? "⏰ Zeit abgelaufen – Trailer beendet!" : "⏰ Time's up – Trailer ended!") + "</span>";
+    document.getElementById("res-title").innerHTML = "<span style='color:#ef4444;'>" + (uiLang === "de" ? "✕ Zeit abgelaufen – Trailer beendet!" : "✕ Time's up – Trailer ended!") + "</span>";
     document.getElementById("res-detail").innerText = (state.currentMovie ? state.currentMovie.title + " (" + (state.currentMovie.release_date || "").slice(0, 4) + ")" : "");
     document.getElementById("btn-continue").innerText = t.nextBtn;
     state.pendingAction = "next_player";
@@ -450,16 +595,15 @@
     const adBanner = document.getElementById("mv-ad-banner");
     const pctEl = document.getElementById("filter-pct");
     const fillEl = document.getElementById("mv-prog-fill");
-    const t = I18N[uiLang];
-
-    adBanner.style.display = "none";
+    const t = getT();
 
     filterTimer = setInterval(function() {
       if (!ytPlayer || !ytReady || typeof ytPlayer.getDuration !== "function") return;
       const dur = ytPlayer.getDuration();
       const cur = ytPlayer.getCurrentTime();
 
-      if (dur > 0) {
+      if (dur > 0 && cur > 0.15) {
+        clearInterval(adWatchdogTimer);
         adBanner.style.display = "none";
         const half = Math.min(10, dur * 0.5);
         const progress = Math.min(1, cur / half);
@@ -519,7 +663,7 @@
   }
   async function buildQuizSteps(movieData) {
     const m = movieData.details;
-    const t = I18N[uiLang];
+    const t = getT();
     const textLang = uiLang === "de" ? "de-DE" : "en-US";
     const mainGenre = (m.genres && m.genres.length > 0) ? m.genres.at(0).id : "";
 
@@ -527,25 +671,25 @@
       "/discover/movie?language=" + textLang + "&include_adult=false&sort_by=popularity.desc&vote_count.gte=300" +
       (mainGenre ? "&with_genres=" + mainGenre : "") + "&page=" + (Math.floor(Math.random() * 5) + 1)
     );
-    const distractors = shuffle((sameGenre.results || []).filter(x => x.id !== m.id && x.title)).slice(0, cfg.choices - 1);
-    const step1Opts = shuffle([{ label: m.title, ok: true }].concat(distractors.map(d => ({ label: d.title, ok: false }))));
+    const distractors = shuffle((sameGenre.results || new Array()).filter(x => x.id !== m.id && x.title)).slice(0, cfg.choices - 1);
+    const step1Opts = shuffle(Array.of({ label: m.title, ok: true }).concat(distractors.map(d => ({ label: d.title, ok: false }))));
 
-    const cast = (m.credits && m.credits.cast) ? m.credits.cast : [];
+    const cast = (m.credits && m.credits.cast) ? m.credits.cast : new Array();
     const leadActor = cast.length > 0 ? cast.at(0).name : "Tom Hanks";
-    const actorDistractors = ["Leonardo DiCaprio", "Scarlett Johansson", "Brad Pitt", "Natalie Portman", "Tom Cruise", "Meryl Streep", "Denzel Washington", "Emma Stone", "Keanu Reeves", "Cate Blanchett"]
+    const actorDistractors = Array.of("Leonardo DiCaprio", "Scarlett Johansson", "Brad Pitt", "Natalie Portman", "Tom Cruise", "Meryl Streep", "Denzel Washington", "Emma Stone", "Keanu Reeves", "Cate Blanchett")
       .filter(n => !cast.slice(0, 6).some(c => c.name === n));
-    const step2Opts = shuffle([{ label: leadActor, ok: true }].concat(shuffle(actorDistractors).slice(0, 3).map(n => ({ label: n, ok: false }))));
+    const step2Opts = shuffle(Array.of({ label: leadActor, ok: true }).concat(shuffle(actorDistractors).slice(0, 3).map(n => ({ label: n, ok: false }))));
 
-    const crew = (m.credits && m.credits.crew) ? m.credits.crew : [];
+    const crew = (m.credits && m.credits.crew) ? m.credits.crew : new Array();
     const dirObj = crew.find(c => c.job === "Director");
     const director = dirObj ? dirObj.name : "Steven Spielberg";
-    const dirDistractors = ["Christopher Nolan", "Quentin Tarantino", "Steven Spielberg", "Martin Scorsese", "Ridley Scott", "Denis Villeneuve", "James Cameron", "Greta Gerwig", "Peter Jackson", "David Fincher"]
+    const dirDistractors = Array.of("Christopher Nolan", "Quentin Tarantino", "Steven Spielberg", "Martin Scorsese", "Ridley Scott", "Denis Villeneuve", "James Cameron", "Greta Gerwig", "Peter Jackson", "David Fincher")
       .filter(n => n !== director);
-    const step3Opts = shuffle([{ label: director, ok: true }].concat(shuffle(dirDistractors).slice(0, 3).map(n => ({ label: n, ok: false }))));
+    const step3Opts = shuffle(Array.of({ label: director, ok: true }).concat(shuffle(dirDistractors).slice(0, 3).map(n => ({ label: n, ok: false }))));
 
     const relYear = m.release_date ? parseInt(m.release_date.slice(0, 4)) : 2010;
     const currentYear = new Date().getFullYear();
-    const yearSet = new Set([relYear]);
+    const yearSet = new Set(Array.of(relYear));
     while (yearSet.size < 4) {
       const offset = (Math.floor(Math.random() * 7) + 1) * (Math.random() < 0.5 ? -1 : 1);
       const candY = relYear + offset;
@@ -554,20 +698,20 @@
     const step4Opts = shuffle(Array.from(yearSet).map(y => ({ label: String(y), ok: y === relYear })));
 
     let step5Q = t.q5Rate;
-    let step5Opts = [];
+    let step5Opts = new Array();
     if (m.tagline && m.tagline.trim().length > 6) {
       step5Q = t.q5Tag;
       const tagPool = distractors.map(d => d.overview ? d.overview.split(".").at(0).trim() : "").filter(s => s.length > 8 && s.length < 95 && s !== m.tagline);
-      const fallbackTags = [
+      const fallbackTags = Array.of(
         uiLang === "de" ? "Jede Legende hat einen Anfang." : "Every legend has a beginning.",
         uiLang === "de" ? "Nichts ist so, wie es scheint." : "Nothing is what it seems.",
         uiLang === "de" ? "Ein Abenteuer jenseits aller Grenzen." : "An adventure beyond all limits."
-      ];
+      );
       const wrongTags = shuffle(tagPool.concat(fallbackTags)).slice(0, 3);
-      step5Opts = shuffle([{ label: "„" + m.tagline + "“", ok: true }].concat(wrongTags.map(w => ({ label: "„" + w + "“", ok: false }))));
+      step5Opts = shuffle(Array.of({ label: "„" + m.tagline + "“", ok: true }).concat(wrongTags.map(w => ({ label: "„" + w + "“", ok: false }))));
     } else {
       const realRating = m.vote_average ? m.vote_average.toFixed(1) : "7.5";
-      const rSet = new Set([realRating]);
+      const rSet = new Set(Array.of(realRating));
       while (rSet.size < 4) {
         const fake = (Math.max(4.5, Math.min(9.4, parseFloat(realRating) + ((Math.floor(Math.random() * 5) + 1) * 0.4 * (Math.random() < 0.5 ? -1 : 1))))).toFixed(1);
         rSet.add(fake);
@@ -575,14 +719,15 @@
       step5Opts = shuffle(Array.from(rSet).map(r => ({ label: "★ " + r + " / 10", ok: r === realRating })));
     }
 
-    return [
+    return Array.of(
       { badge: t.step1, q: t.q1, opts: step1Opts },
       { badge: t.step2, q: t.q2, opts: step2Opts },
       { badge: t.step3, q: t.q3, opts: step3Opts },
       { badge: t.step4, q: t.q4, opts: step4Opts },
       { badge: t.step5, q: step5Q, opts: step5Opts }
-    ];
+    );
   }
+
   function renderScoreboard() {
     const sb = document.getElementById("scoreboard");
     sb.innerHTML = "";
@@ -595,8 +740,9 @@
   }
 
   async function loadNextMovieTurn() {
-    const t = I18N[uiLang];
+    const t = getT();
     clearInterval(filterTimer);
+    clearInterval(adWatchdogTimer);
     document.getElementById("mv-curtain").style.opacity = "1";
     const topMask = document.querySelector(".mv-topmask");
     if (topMask) topMask.style.opacity = "1";
@@ -609,10 +755,9 @@
     document.getElementById("mv-ad-sub").innerText = uiLang === "de"
       ? "Genau genug Zeit, um noch schnell Popcorn zu holen – der Vorhang hebt sich gleich von selbst!"
       : "Just enough time to grab some popcorn – the curtain will rise automatically!";
+    document.getElementById("btn-ipad-unmute").innerText = uiLang === "de" ? "♪ Ton & Trailer aktivieren" : "♪ Unmute & Start Trailer";
     adBanner.style.display = "flex";
     adBanner.style.opacity = "1";
-    document.getElementById("mv-ad-banner").style.display = "flex";
-    document.getElementById("mv-ad-banner").style.opacity = "1";
     document.getElementById("filter-pct").innerText = t.vis + ": 0%";
     document.getElementById("mv-prog-fill").style.width = "0%";
     document.getElementById("turn-result").style.display = "none";
@@ -620,7 +765,7 @@
     document.getElementById("options-grid").innerHTML = "<div style='color:#94a3b8;'>" + t.loading + "</div>";
 
     const curPlayer = state.players.at(state.curIdx);
-    document.getElementById("turn-badge").innerText = (state.isTiebreaker ? "⚡ " : "") + curPlayer.name + (uiLang === "de" ? " " + t.turn : t.turn);
+    document.getElementById("turn-badge").innerText = (state.isTiebreaker ? "★ " : "") + curPlayer.name + (uiLang === "de" ? " " + t.turn : t.turn);
     document.getElementById("streak-badge").innerText = "(" + t.filmOf + " " + (state.moviesInTurn + 1) + "/2 " + t.inTurn + ")";
     renderScoreboard();
 
@@ -634,6 +779,8 @@
       if (ytPlayer && ytReady) {
         state.currentTrailerKey = movieData.trailerKey;
         ytPlayer.loadVideoById(movieData.trailerKey);
+        unlockYouTubeAudio();
+        startAdWatchdog();
       }
       renderStep();
     } catch (err) {
@@ -682,7 +829,7 @@
 
   function handleAnswer(opt, clickedBtn) {
     if (state.turnFinished) return;
-    const t = I18N[uiLang];
+    const t = getT();
     const allBtns = document.querySelectorAll("#options-grid .mv-opt");
     allBtns.forEach(b => { b.disabled = true; });
     const curPlayer = state.players.at(state.curIdx);
@@ -733,6 +880,7 @@
   }
 
   document.getElementById("btn-continue").addEventListener("click", function() {
+    unlockYouTubeAudio();
     if (state.pendingAction === "bonus_movie") {
       loadNextMovieTurn();
     } else {
@@ -741,6 +889,7 @@
   });
 
   document.getElementById("btn-skip-movie").addEventListener("click", function() {
+    unlockYouTubeAudio();
     loadNextMovieTurn();
   });
 
@@ -774,7 +923,7 @@
       return;
     }
 
-    const leaders = [];
+    const leaders = new Array();
     state.players.forEach((p, idx) => { if (p.score === maxScore) leaders.push(idx); });
 
     if (leaders.length === 1) {
@@ -784,16 +933,18 @@
       state.tieCandidates = leaders;
       state.tieStepIdx = 0;
       state.curIdx = leaders.at(0);
-      alert(I18N[uiLang].tieMsg);
+      document.getElementById("turn-badge").innerText = getT().tieMsg;
       loadNextMovieTurn();
     }
   }
 
   function showWinner(winner) {
     clearInterval(filterTimer);
+    clearInterval(adWatchdogTimer);
+    gameActive = false;
     if (ytPlayer && ytReady && typeof ytPlayer.stopVideo === "function") ytPlayer.stopVideo();
 
-    const t = I18N[uiLang];
+    const t = getT();
     document.getElementById("win-name").innerText = winner.name;
     document.getElementById("win-score-txt").innerText = winner.name + " " + t.winTxt + " " + winner.score + " " + t.pts;
 
@@ -838,18 +989,39 @@
     state = {
       players: names.map(n => ({ name: n, score: 0 })),
       curIdx: 0, moviesInTurn: 0, step: 0,
-      isTiebreaker: false, tieCandidates: [], tieStepIdx: 0,
-      currentMovie: null, stepsData: [], pendingAction: null
+      isTiebreaker: false, tieCandidates: new Array(), tieStepIdx: 0,
+      currentMovie: null, stepsData: new Array(), pendingAction: null
     };
 
+    gameActive = true;
     usedMovieIds.clear();
+    enterFullscreen();
     showScreen("scr-game");
+    unlockYouTubeAudio();
     loadNextMovieTurn();
+  });
+
+  document.getElementById("exitFsBtn").addEventListener("click", function() {
+    exitFullscreen();
+  });
+
+  document.getElementById("btn-resume-game").addEventListener("click", function() {
+    enterFullscreen();
+    if (gameActive) {
+      showScreen("scr-game");
+      unlockYouTubeAudio();
+    } else {
+      showScreen("scr-winner");
+    }
   });
 
   document.getElementById("btn-restart").addEventListener("click", function() {
     clearInterval(filterTimer);
+    clearInterval(adWatchdogTimer);
+    gameActive = false;
+    document.getElementById("btn-resume-game").style.display = "none";
     if (ytPlayer && ytReady && typeof ytPlayer.stopVideo === "function") ytPlayer.stopVideo();
+    enterFullscreen();
     showScreen("scr-setup");
   });
 })();
