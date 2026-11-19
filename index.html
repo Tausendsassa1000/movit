@@ -36,7 +36,8 @@
   .mv-box { background: var(--card); padding: 18px; border-radius: 12px; margin-bottom: 16px; border: 1px solid #334155; }
   .mv-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
   .mv-lbl { display: block; font-size: 0.88rem; font-weight: 700; color: var(--gold-l); margin-bottom: 6px; }
-  .mv-inp, .mv-sel { width: 100%; padding: 10px; border-radius: 8px; background: #0f172a; color: #fff; border: 1px solid #475569; font-size: 0.95rem; margin-bottom: 10px; }
+  .mv-inp, .mv-sel { width: 100%; padding: 10px; border-radius: 8px; background: #0f172a; color: #fff; border: 1px solid #475569; font-size: 0.95rem; margin-bottom: 10px; -webkit-appearance: none; appearance: none; }
+  .mv-sel { padding-right: 28px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23fbbf24' d='M2 4l4 4 4-4z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 9px center; }
   .mv-btn { background: var(--gold); color: #000; border: none; padding: 12px 24px; border-radius: 25px; font-weight: 800; font-size: 1rem; cursor: pointer; transition: transform 0.1s, opacity 0.2s; }
   .mv-btn:hover { transform: scale(1.02); }
   .mv-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
@@ -93,21 +94,17 @@
 
   <div class="ka2-bar">
     <div class="ka2-brand">
-      <svg width="44" height="19" viewBox="0 0 220 95" aria-label="KA2 Logo" style="display:block; flex-shrink:0;">
-        <defs><clipPath id="ka2-oval"><ellipse cx="110" cy="47.5" rx="110" ry="47.5"/></clipPath></defs>
-        <g clip-path="url(#ka2-oval)">
-          <rect x="0" y="0" width="220" height="95" fill="#4f4f4f"/>
-          <rect x="42" y="0" width="52" height="95" fill="#0068b7"/>
-          <polygon points="42,50 86,95 42,95" fill="#00b4ed"/>
-          <polygon points="88,28 122,74 88,74" fill="#39a935"/>
-          <rect x="88" y="74" width="54" height="21" fill="#ffed00"/>
-          <polygon points="62,0 185,0 185,74 118,74" fill="#e30613"/>
-          <polygon points="164,0 185,0 185,74 176,74" fill="#ea5b0c"/>
-          <polygon points="142,74 185,74 172,95 142,95" fill="#e6007e"/>
-          <path d="M36,0 H47 V45 L88,0 H103 L61,46 L104,95 H89 L47,48 V95 H36 Z" fill="#2d2d2d"/>
-          <path d="M111,0 H123 L156,95 H144 L136,72 H98 L90,95 H78 Z M102,62 H132 L117,17 Z" fill="#2d2d2d"/>
-          <path d="M138,26 C138,10 150,2 164,2 C178,2 187,11 187,25 C187,39 177,48 161,61 L148,72 H187 V83 H134 V73 L153,56 C168,43 175,36 175,25 C175,17 170,12 163,12 C155,12 150,18 150,27 Z" fill="#2d2d2d"/>
-        </g>
+      <svg width="44" height="19" viewBox="0 0 220 95" aria-label="KA2 Logo" style="display:block; flex-shrink:0; border-radius:50%; overflow:hidden; background:#4f4f4f;">
+        <rect x="42" y="0" width="52" height="95" fill="#0068b7"/>
+        <polygon points="42,50 86,95 42,95" fill="#00b4ed"/>
+        <polygon points="88,28 122,74 88,74" fill="#39a935"/>
+        <rect x="88" y="74" width="54" height="21" fill="#ffed00"/>
+        <polygon points="62,0 185,0 185,74 118,74" fill="#e30613"/>
+        <polygon points="164,0 185,0 185,74 176,74" fill="#ea5b0c"/>
+        <polygon points="142,74 185,74 172,95 142,95" fill="#e6007e"/>
+        <path d="M36,0 H47 V45 L88,0 H103 L61,46 L104,95 H89 L47,48 V95 H36 Z" fill="#2d2d2d"/>
+        <path d="M111,0 H123 L156,95 H144 L136,72 H98 L90,95 H78 Z M102,62 H132 L117,17 Z" fill="#2d2d2d"/>
+        <path d="M138,26 C138,10 150,2 164,2 C178,2 187,11 187,25 C187,39 177,48 161,61 L148,72 H187 V83 H134 V73 L153,56 C168,43 175,36 175,25 C175,17 170,12 163,12 C155,12 150,18 150,27 Z" fill="#2d2d2d"/>
       </svg>
       <span>ka-2.art Games</span>
     </div>
@@ -481,18 +478,18 @@
 
   function applyLanguage() {
     uiLang = document.getElementById("sel-ui-lang").value;
-    const t = I18N[uiLang];
+    const t = getT();
     document.getElementById("ui-sub").innerText = t.sub;
     document.getElementById("lbl-apikey").innerText = t.apikey;
     document.getElementById("lbl-apihelp").innerText = t.apihelp;
     document.getElementById("lbl-rules").innerText = t.rules;
     document.getElementById("lbl-trailerlang").innerText = t.tlang;
-    document.getElementById("sel-trailer-lang").options[0].text = t.tlangMenu;
-    document.getElementById("sel-trailer-lang").options[1].text = t.tlangOrig;
+    document.getElementById("sel-trailer-lang").options.item(0).text = t.tlangMenu;
+    document.getElementById("sel-trailer-lang").options.item(1).text = t.tlangOrig;
     document.getElementById("lbl-genre").innerText = t.genre;
     document.getElementById("lbl-fsk").innerText = t.fsk;
-    document.getElementById("sel-fsk").options[0].text = t.fsk18;
-    document.getElementById("sel-fsk").options[1].text = t.fsk12;
+    document.getElementById("sel-fsk").options.item(0).text = t.fsk18;
+    document.getElementById("sel-fsk").options.item(1).text = t.fsk12;
     document.getElementById("lbl-choices").innerText = t.choices;
     document.getElementById("lbl-target").innerText = t.target;
     document.getElementById("lbl-players").innerText = t.players;
@@ -502,7 +499,10 @@
     document.getElementById("btn-skip-movie").innerText = t.skip;
     document.getElementById("btn-replay-fanfare").innerText = t.replay;
     document.getElementById("btn-restart").innerText = t.restart;
+    document.getElementById("exitFsBtn").innerText = uiLang === "de" ? "✕ Menü" : "✕ Menu";
+    document.getElementById("btn-resume-game").innerText = uiLang === "de" ? "▶ Laufendes Spiel fortsetzen" : "▶ Resume current game";
   }
+
   document.getElementById("sel-ui-lang").addEventListener("change", applyLanguage);
 
   document.getElementById("btn-add-player").addEventListener("click", function() {
